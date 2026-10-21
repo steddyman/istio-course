@@ -1,0 +1,1251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Interactive course on every Istio, Kubernetes and cert-manager object needed for ingress and egress gateways, covering TCP, TLS and mTLS with annotated YAML.">
+<title>Istio Ingress &amp; Egress</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a transit-map course. Fixed module rail on the left, one module at a time on the right.
+   Encryption states are "lines" with fixed colors used in every diagram. */
+:root {
+  --bg: #F2F4F7;
+  --surface: #FFFFFF;
+  --surface-2: #E9EDF3;
+  --ink: #131B2C;
+  --ink-2: #374360;
+  --muted: #5F6B84;
+  --line: #D3DAE5;
+  --accent: #2955BE;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E1E8FA;
+
+  --c-plain: #7A8498;
+  --c-tls: #C27800;
+  --c-mtls: #B4306C;
+  --c-istio: #08857A;
+
+  --f-istio: #2955BE;
+  --f-k8s: #56637D;
+  --f-cm: #2C8653;
+  --f-install: #9C6224;
+  --f-gwapi: #7449C2;
+
+  --z-ing: #E4ECFB;  --z-ing-b: #B3C6EE;
+  --z-egr: #EEE7FA;  --z-egr-b: #CDBDEB;
+  --z-ten: #E2F2EB;  --z-ten-b: #AED8C4;
+  --z-sys: #F5EEDF;  --z-sys-b: #DEC9A0;
+  --z-cm:  #E5F2E8;  --z-cm-b:  #B2D6BC;
+  --z-clu: #EBEDF1;  --z-clu-b: #C9CFDA;
+  --z-ext: #F0F1F3;  --z-ext-b: #CBD0D8;
+
+  --ok: #0D7A47;
+  --bad: #B3261E;
+
+  --code-bg: #0F1627;
+  --code-line: #1D2740;
+  --t-k: #93B5FF;
+  --t-s: #F1C26B;
+  --t-n: #7CDCCB;
+  --t-c: #73809B;
+  --t-p: #9BA7BE;
+  --t-v: #E3E8F2;
+  --t-hl: #23304F;
+
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0C111D; --surface: #131A2A; --surface-2: #1A2336; --ink: #E6EBF4; --ink-2: #C0C9DA; --muted: #8C98B0; --line: #283349;
+    --accent: #7DA0FF; --accent-ink: #0C111D; --accent-soft: #1C2945;
+    --c-plain: #8F99AD; --c-tls: #F0AC38; --c-mtls: #EE6EA7; --c-istio: #2CC2B0;
+    --f-istio: #7DA0FF; --f-k8s: #98A5BE; --f-cm: #5CC487; --f-install: #DDA05E; --f-gwapi: #A889F0;
+    --z-ing: #16223B; --z-ing-b: #2C4370; --z-egr: #201A36; --z-egr-b: #45386E; --z-ten: #12281F; --z-ten-b: #285843;
+    --z-sys: #282214; --z-sys-b: #56482A; --z-cm: #132719; --z-cm-b: #2A5636; --z-clu: #181E2C; --z-clu-b: #343E54; --z-ext: #181C26; --z-ext-b: #343B4A;
+    --ok: #4CC98A; --bad: #FF8A80;
+    --code-bg: #0A0F1B; --code-line: #19223A; --t-hl: #1E2A47;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0C111D; --surface: #131A2A; --surface-2: #1A2336; --ink: #E6EBF4; --ink-2: #C0C9DA; --muted: #8C98B0; --line: #283349;
+  --accent: #7DA0FF; --accent-ink: #0C111D; --accent-soft: #1C2945;
+  --c-plain: #8F99AD; --c-tls: #F0AC38; --c-mtls: #EE6EA7; --c-istio: #2CC2B0;
+  --f-istio: #7DA0FF; --f-k8s: #98A5BE; --f-cm: #5CC487; --f-install: #DDA05E; --f-gwapi: #A889F0;
+  --z-ing: #16223B; --z-ing-b: #2C4370; --z-egr: #201A36; --z-egr-b: #45386E; --z-ten: #12281F; --z-ten-b: #285843;
+  --z-sys: #282214; --z-sys-b: #56482A; --z-cm: #132719; --z-cm-b: #2A5636; --z-clu: #181E2C; --z-clu-b: #343E54; --z-ext: #181C26; --z-ext-b: #343B4A;
+  --ok: #4CC98A; --bad: #FF8A80;
+  --code-bg: #0A0F1B; --code-line: #19223A; --t-hl: #1E2A47;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+img { max-width: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15.5px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--surface); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+code, .mono { font-family: var(--f-mono); font-size: 0.9em; }
+p code, li code, td code, .lede code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; color: var(--ink); overflow-wrap: anywhere; }
+a { color: var(--accent); }
+
+.shell { display: grid; grid-template-columns: 284px minmax(0, 1fr); min-height: 100vh; }
+
+/* ---------- Rail ---------- */
+.rail { position: sticky; top: env(safe-area-inset-top, 0px); height: calc(100vh - env(safe-area-inset-top, 0px)); overflow-y: auto; background: var(--surface); border-right: 1px solid var(--line); padding: 22px 14px 28px max(14px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 18px; }
+.brand { display: flex; flex-direction: column; gap: 4px; padding: 0 8px; }
+.brand-mark { display: flex; gap: 5px; }
+.brand-mark i { width: 22px; height: 6px; border-radius: 3px; display: block; }
+.brand h2 { font-family: var(--f-display); font-stretch: 112%; font-weight: 800; font-size: 19px; line-height: 1.15; margin: 8px 0 0; letter-spacing: -0.01em; }
+.brand p { margin: 0; color: var(--muted); font-size: 13px; }
+.progress { padding: 0 8px; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.progress-bar { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.progress-bar i { display: block; height: 100%; background: var(--c-istio); width: 0; transition: width .4s; }
+.nav-group { display: flex; flex-direction: column; gap: 2px; }
+.nav-group h3 { font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; padding: 0 8px; font-weight: 600; }
+.nav-item { display: flex; align-items: center; gap: 10px; text-align: left; background: none; border: 0; border-radius: 8px; padding: 7px 8px; cursor: pointer; font-size: 14px; color: var(--ink-2); line-height: 1.3; }
+.nav-item:hover { background: var(--surface-2); color: var(--ink); }
+.nav-item.active { background: var(--accent-soft); color: var(--ink); font-weight: 600; }
+.nav-item .tick { width: 16px; height: 16px; flex: none; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; }
+.nav-item.done .tick { background: var(--c-istio); border-color: var(--c-istio); }
+.nav-item.done .tick::after { content: ""; width: 5px; height: 8px; border: solid var(--surface); border-width: 0 2px 2px 0; transform: translateY(-1px) rotate(45deg); }
+.rail-toggle { display: none; }
+
+/* ---------- Main ---------- */
+main { min-width: 0; padding-block: 40px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.module { max-width: 1040px; margin: 0 auto; padding: 0 clamp(0px, 2vw, 24px); display: flex; flex-direction: column; gap: 44px; }
+.module > section { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.kicker { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; color: var(--accent); margin: 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+h1 { font-family: var(--f-display); font-stretch: 110%; font-weight: 800; font-size: clamp(30px, 4.4vw, 46px); line-height: 1.06; letter-spacing: -0.015em; margin: 6px 0 0; text-wrap: balance; }
+h2 { font-family: var(--f-display); font-stretch: 106%; font-weight: 750; font-size: 24px; line-height: 1.2; margin: 0; letter-spacing: -0.005em; text-wrap: balance; }
+h3 { font-family: var(--f-display); font-weight: 700; font-size: 17px; margin: 0; line-height: 1.3; }
+h4 { margin: 0; font-size: 13px; }
+.lede { font-size: 17.5px; line-height: 1.6; color: var(--ink-2); max-width: 68ch; margin: 14px 0 0; }
+.prose { max-width: 70ch; color: var(--ink-2); margin: 0; }
+.prose + .prose { margin-top: -4px; }
+.mod-head { display: flex; flex-direction: column; gap: 0; }
+.keyidea { margin-top: 20px; display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 18px; max-width: 820px; }
+.keyidea b { font-family: var(--f-display); font-stretch: 112%; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding-top: 3px; }
+.keyidea p { margin: 0; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px; min-width: 0; }
+.grid { display: grid; gap: 14px; }
+.grid.c2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.card h3 { margin-bottom: 6px; }
+.card p { margin: 0 0 8px; color: var(--ink-2); font-size: 14.5px; }
+.card ul { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: 14.5px; }
+
+.scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--r); }
+.figure { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.figure .scroll-x { border-radius: var(--r) var(--r) 0 0; }
+.fig-foot { border-top: 1px solid var(--line); padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 12.5px; color: var(--muted); align-items: center; }
+
+/* Encryption legend */
+.enc { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+.enc i { width: 26px; height: 0; border-top: 4px solid; display: inline-block; border-radius: 2px; }
+.enc.plain i { border-top: 3px dashed var(--c-plain); }
+.enc.tls i { border-color: var(--c-tls); }
+.enc.mtls i { border-top: 6px double var(--c-mtls); height: 0; }
+.enc.istio i { border-color: var(--c-istio); }
+
+/* Badges and chips */
+.badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.badge.required { color: var(--ink); border-color: var(--ink-2); }
+.badge.recommended { color: var(--accent); border-color: var(--accent); }
+.badge.optional { border-style: dashed; }
+.badge.platform { background: var(--z-ing); border-color: var(--z-ing-b); color: var(--ink-2); }
+.badge.tenant { background: var(--z-ten); border-color: var(--z-ten-b); color: var(--ink-2); }
+.badge.none { color: var(--muted); }
+.ns { font-family: var(--f-mono); font-size: 12px; padding: 1px 7px; border-radius: 5px; border: 1px solid var(--z-clu-b); background: var(--z-clu); color: var(--ink-2); white-space: nowrap; }
+.ns.ing { background: var(--z-ing); border-color: var(--z-ing-b); }
+.ns.egr { background: var(--z-egr); border-color: var(--z-egr-b); }
+.ns.ten { background: var(--z-ten); border-color: var(--z-ten-b); }
+.ns.sys { background: var(--z-sys); border-color: var(--z-sys-b); }
+.ns.cm { background: var(--z-cm); border-color: var(--z-cm-b); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 3px 9px 3px 7px; cursor: pointer; font-size: 12.5px; color: var(--ink); max-width: 100%; text-align: left; }
+.chip:hover { border-color: var(--accent); }
+.chip .dot, .dot { width: 8px; height: 8px; border-radius: 2px; flex: none; display: inline-block; }
+.fam-istio { background: var(--f-istio); } .fam-k8s { background: var(--f-k8s); } .fam-cm { background: var(--f-cm); } .fam-install { background: var(--f-install); } .fam-gwapi { background: var(--f-gwapi); }
+.chip .k { color: var(--muted); }
+.chip .n { font-family: var(--f-mono); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip .lbl { color: var(--muted); font-size: 11.5px; }
+
+/* ---------- Overview map ---------- */
+.map svg { display: block; width: 100%; min-width: 860px; height: auto; }
+.map .zone rect { stroke-width: 1.2; }
+.map text { font-family: var(--f-body); fill: var(--ink); }
+.map .zlabel { font-family: var(--f-mono); font-size: 12px; fill: var(--ink-2); font-weight: 500; }
+.map .pod rect { fill: var(--surface); stroke: var(--ink-2); stroke-width: 1.2; }
+.map .pod text { font-size: 12.5px; font-weight: 600; }
+.map .pod .s { font-size: 10.5px; font-weight: 400; fill: var(--muted); }
+.map .route { cursor: pointer; }
+.map .route path { fill: none; stroke-linecap: round; transition: stroke-width .15s, opacity .15s; }
+.map:hover .route { opacity: .45; }
+.map .route:hover, .map .route:focus { opacity: 1; }
+.map .route:hover path.w { stroke-width: 7; }
+.map .cfg { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 2 4; }
+.map .cfgl { font-size: 11px; fill: var(--muted); }
+
+/* SVG line styles shared by map and flows */
+.l-plain { stroke: var(--c-plain); stroke-width: 3.5; stroke-dasharray: 7 6; }
+.l-tls { stroke: var(--c-tls); stroke-width: 4.5; }
+.l-mtls { stroke: var(--c-mtls); stroke-width: 7; }
+.l-mtls-in { stroke: var(--surface); stroke-width: 2; }
+.l-istio { stroke: var(--c-istio); stroke-width: 4.5; }
+
+/* ---------- Flow (wire view) ---------- */
+.flow svg { display: block; width: 100%; min-width: 760px; height: auto; }
+.flow text { font-family: var(--f-body); fill: var(--ink); }
+.flow .fnode rect { stroke-width: 1.4; transition: stroke-width .2s; }
+.flow .fnode { cursor: pointer; }
+.flow .fnode .t { font-weight: 700; font-size: 14px; }
+.flow .fnode .s { font-size: 11.5px; fill: var(--muted); }
+.flow .fnode.on rect.box { stroke: var(--accent); stroke-width: 3; }
+.flow .hop { transition: opacity .3s; }
+.flow .hop.ahead { opacity: .3; }
+.flow .hop path { fill: none; stroke-linecap: round; }
+.flow .hlabel { font-size: 12px; fill: var(--ink-2); font-weight: 500; }
+.flow .lead { stroke: var(--line); stroke-width: 1.2; }
+.flow .track { stroke: var(--line); stroke-width: 2; }
+.flow .packet { transition: transform .7s cubic-bezier(.6,.05,.25,1); }
+.flow .packet circle { fill: var(--accent); stroke: var(--surface); stroke-width: 3; }
+.flow-panel { border-top: 1px solid var(--line); padding: 16px 20px 18px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px 20px; align-items: start; }
+.flow-panel h3 { font-size: 18px; }
+.flow-panel .count { font-size: 12px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
+.flow-panel p { margin: 6px 0 10px; color: var(--ink-2); max-width: 72ch; }
+.flow-ctrls { display: flex; gap: 6px; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 14px; cursor: pointer; font-size: 14px; font-weight: 500; white-space: nowrap; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn:disabled { opacity: .4; cursor: default; }
+
+/* ---------- Object map (graph) ---------- */
+.graph svg { display: block; min-width: 100%; height: auto; }
+.graph text { font-family: var(--f-body); }
+.graph .lane { stroke-width: 1; }
+.graph .lane-l { font-family: var(--f-mono); font-size: 12.5px; font-weight: 600; fill: var(--ink-2); }
+.graph .lane-s { font-size: 11px; fill: var(--muted); }
+.graph .node { cursor: pointer; }
+.graph .node rect.box { fill: var(--surface); stroke: var(--line); stroke-width: 1.3; transition: stroke .15s; }
+.graph .node.optional rect.box { stroke-dasharray: 4 3; }
+.graph .node .kind { font-size: 10.5px; fill: var(--muted); font-weight: 600; letter-spacing: .02em; }
+.graph .node .nm { font-family: var(--f-mono); font-size: 11.5px; fill: var(--ink); }
+.graph .node .tag { font-size: 9px; font-weight: 700; letter-spacing: .06em; fill: var(--muted); }
+.graph .node.required .tag { fill: var(--ink-2); }
+.graph .node.recommended .tag { fill: var(--accent); }
+.graph .node:hover rect.box, .graph .node.on rect.box { stroke: var(--accent); }
+.graph .node.sel rect.box { stroke: var(--accent); stroke-width: 2.6; }
+.graph .edge { fill: none; stroke: var(--muted); stroke-width: 1.2; opacity: .38; marker-end: var(--mk); transition: opacity .15s; }
+.graph .edge.on { stroke: var(--accent); opacity: 1; stroke-width: 2; marker-end: var(--mk-on); }
+.graph svg.hot .node:not(.on):not(.sel) { opacity: .45; }
+.graph svg.hot .edge:not(.on) { opacity: .12; }
+.graph .el { display: none; pointer-events: none; }
+.graph .el.on { display: inline; }
+.graph .el rect { fill: var(--surface); stroke: var(--accent); stroke-width: 1; }
+.graph .el text { font-size: 10.5px; fill: var(--ink); font-weight: 500; }
+
+.module > .objwrap { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 16px; align-items: start; }
+.objlist { display: flex; flex-direction: column; gap: 14px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); max-height: calc(100vh - 32px); overflow-y: auto; padding-right: 4px; }
+.objlist .grp { display: flex; flex-direction: column; gap: 3px; }
+.objlist .grp > span { margin-bottom: 4px; align-self: flex-start; }
+.ol-item { display: flex; align-items: center; gap: 8px; border: 1px solid transparent; background: none; border-radius: 7px; padding: 5px 8px; cursor: pointer; text-align: left; font-size: 13px; min-width: 0; }
+.ol-item:hover { background: var(--surface); border-color: var(--line); }
+.ol-item.sel { background: var(--surface); border-color: var(--accent); }
+.ol-item .txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.ol-item .txt small { color: var(--muted); font-size: 11px; }
+.ol-item .txt span { font-family: var(--f-mono); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.detail { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.d-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.d-head h3 { font-family: var(--f-mono); font-size: 19px; font-weight: 600; overflow-wrap: anywhere; }
+.d-kind { font-family: var(--f-display); font-stretch: 112%; font-weight: 800; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; display: inline-flex; gap: 7px; align-items: center; }
+.d-api { color: var(--muted); font-family: var(--f-mono); font-size: 12px; }
+.d-block { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 6px 16px; font-size: 14.5px; }
+.d-block dt { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .07em; font-weight: 600; padding-top: 3px; }
+.d-block dd { margin: 0; color: var(--ink-2); }
+
+/* ---------- YAML viewer ---------- */
+.yaml { background: var(--code-bg); border-radius: var(--r); overflow: hidden; color: var(--t-v); min-width: 0; }
+.yaml-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 10px 8px 16px; border-bottom: 1px solid var(--code-line); font-family: var(--f-mono); font-size: 12px; color: var(--t-p); }
+.yaml-bar button { background: transparent; border: 1px solid var(--code-line); color: var(--t-v); border-radius: 6px; padding: 3px 10px; font-size: 12px; cursor: pointer; }
+.yaml-bar button:hover { border-color: var(--t-k); }
+.yaml pre { margin: 0; padding: 12px 0; overflow-x: auto; font-family: var(--f-mono); font-size: 12.8px; line-height: 1.62; }
+.yaml .ln { display: block; padding: 0 16px; white-space: pre; min-width: max-content; }
+.yaml .ln.hl { background: var(--t-hl); }
+.t-k { color: var(--t-k); } .t-s { color: var(--t-s); } .t-n { color: var(--t-n); } .t-c { color: var(--t-c); font-style: italic; } .t-p { color: var(--t-p); }
+.mk { display: inline-grid; place-items: center; margin-left: 10px; min-width: 19px; height: 19px; padding: 0 4px; border-radius: 10px; background: var(--t-s); color: var(--code-bg); font-size: 11px; font-weight: 700; border: 0; cursor: pointer; vertical-align: 1px; font-family: var(--f-body); font-style: normal; }
+.notes { margin: 0; padding: 12px 16px 16px; border-top: 1px solid var(--code-line); list-style: none; display: flex; flex-direction: column; gap: 6px; counter-reset: n; }
+.notes li { display: grid; grid-template-columns: 24px minmax(0,1fr); gap: 8px; font-family: var(--f-body); font-size: 13.5px; line-height: 1.5; color: var(--t-v); padding: 4px 6px; border-radius: 6px; cursor: default; }
+.notes li b { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 10px; background: var(--t-s); color: var(--code-bg); font-size: 11px; margin-top: 1px; }
+.notes li.hl { background: var(--t-hl); }
+
+.shell-block { background: var(--code-bg); color: var(--t-v); border-radius: var(--r); overflow: hidden; }
+.shell-block pre { margin: 0; padding: 14px 16px; overflow-x: auto; font-family: var(--f-mono); font-size: 12.8px; line-height: 1.6; }
+
+/* ---------- Tables ---------- */
+.tbl { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--surface); }
+.tbl th, .tbl td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tbl th { font-size: 11.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--surface-2); white-space: nowrap; }
+.tbl td { color: var(--ink-2); }
+.tbl td:first-child { color: var(--ink); }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl-wrap { border: 1px solid var(--line); border-radius: var(--r); overflow-x: auto; }
+.tbl-wrap .tbl { min-width: 720px; }
+.tbl .mono { white-space: nowrap; }
+.cat-row { cursor: pointer; }
+.cat-row:hover td { background: var(--surface-2); }
+.cat-more td { background: var(--bg); }
+.cat-more p { margin: 0 0 10px; max-width: 75ch; }
+
+/* ---------- Strips matrix ---------- */
+.strips { display: flex; flex-direction: column; gap: 10px; min-width: 760px; padding: 16px 18px; }
+.strip { display: grid; grid-template-columns: 210px minmax(0,1fr); gap: 16px; align-items: center; background: none; border: 0; text-align: left; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+.strip:hover { background: var(--surface-2); }
+.strip .nm { font-weight: 600; font-size: 14px; line-height: 1.3; }
+.strip .nm small { display: block; color: var(--muted); font-weight: 400; font-size: 12px; }
+.strip .row { display: flex; align-items: center; gap: 0; min-width: 0; }
+.strip .st { font-size: 11.5px; color: var(--ink-2); border: 1px solid var(--line); background: var(--surface); padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
+.strip .sg { flex: 1; min-width: 24px; height: 0; margin: 0 4px; }
+.sg.plain { border-top: 3px dashed var(--c-plain); }
+.sg.tls { border-top: 4px solid var(--c-tls); }
+.sg.mtls { border-top: 7px double var(--c-mtls); }
+.sg.istio { border-top: 4px solid var(--c-istio); }
+
+/* ---------- Handshake cards ---------- */
+.hs svg { width: 100%; height: auto; display: block; }
+.hs text { font-family: var(--f-body); font-size: 11px; fill: var(--ink-2); }
+.hs .party { fill: var(--surface-2); stroke: var(--line); }
+.hs .pt { font-weight: 700; font-size: 11.5px; fill: var(--ink); }
+.hs .ar { fill: none; stroke-width: 1.6; }
+.hs-sees { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.see { font-size: 11.5px; border-radius: 6px; padding: 1px 7px; border: 1px solid var(--line); }
+.see.y { color: var(--ink); border-color: var(--ink-2); }
+.see.n { color: var(--muted); text-decoration: line-through; }
+
+/* ---------- Builder, layers, quiz ---------- */
+.opts { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+.opt { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-size: 14px; }
+.opt:hover { border-color: var(--accent); }
+.opt input { margin-top: 4px; accent-color: var(--accent); }
+.opt small { display: block; color: var(--muted); font-size: 12.5px; }
+.kit { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.kit .card { display: flex; flex-direction: column; gap: 10px; }
+.kit .card header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.kit .count { font-size: 12px; color: var(--muted); }
+.kit .chips { flex-direction: column; align-items: stretch; }
+.kit .chip { justify-content: flex-start; }
+
+.layers { display: flex; flex-direction: column; gap: 10px; }
+.layer { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; }
+.layer .num { font-family: var(--f-display); font-stretch: 120%; font-weight: 800; font-size: 26px; color: var(--accent); line-height: 1; }
+.layer p { margin: 4px 0 8px; color: var(--ink-2); font-size: 14.5px; }
+.layer .miss { font-size: 13.5px; color: var(--muted); margin: 8px 0 0; }
+
+.quiz { display: flex; flex-direction: column; gap: 14px; }
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+.q h3 { font-family: var(--f-body); font-weight: 600; font-size: 15.5px; }
+.q .n { color: var(--muted); font-family: var(--f-mono); font-size: 12px; }
+.q .ans { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+.q .a { text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 14px; }
+.q .a:hover:not(:disabled) { border-color: var(--accent); }
+.q .a.right { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, var(--surface)); }
+.q .a.wrong { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 10%, var(--surface)); }
+.q .a:disabled { cursor: default; }
+.q .why { margin: 0; color: var(--ink-2); font-size: 14px; border-left: 3px solid var(--line); padding-left: 12px; }
+.score { font-family: var(--f-display); font-stretch: 112%; font-weight: 800; font-size: 20px; }
+
+.mod-foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 22px; }
+.mod-foot .next { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.mod-foot .next small { color: var(--muted); font-size: 12px; }
+
+.gotchas { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.gotchas li { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px 10px 40px; position: relative; color: var(--ink-2); font-size: 14.5px; }
+.gotchas li::before { content: "!"; position: absolute; left: 12px; top: 10px; width: 18px; height: 18px; border-radius: 50%; background: var(--c-tls); color: var(--surface); font-weight: 800; font-size: 12px; display: grid; place-items: center; }
+
+.legend-row { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 12.5px; color: var(--muted); align-items: center; }
+
+/* ---------- Modal ---------- */
+.modal { position: fixed; inset: 0; z-index: 50; background: color-mix(in srgb, var(--ink) 45%, transparent); display: flex; justify-content: flex-end; }
+.modal-panel { width: min(760px, 100%); height: 100%; background: var(--bg); overflow-y: auto; padding: calc(20px + env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) calc(28px + env(safe-area-inset-bottom, 0px)) 20px; display: flex; flex-direction: column; gap: 14px; box-shadow: -10px 0 40px rgba(0,0,0,.18); }
+.modal-top { display: flex; justify-content: space-between; align-items: center; }
+
+.toast { position: fixed; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 16px; border-radius: 8px; font-size: 13.5px; z-index: 60; }
+
+@media (max-width: 980px) {
+  .module > .objwrap { grid-template-columns: minmax(0,1fr); }
+  .objlist { position: static; max-height: none; flex-direction: row; flex-wrap: wrap; gap: 10px; }
+  .objlist .grp { flex: 1 1 220px; }
+  .grid.c4 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .grid.c3 { grid-template-columns: minmax(0,1fr); }
+}
+@media (max-width: 860px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .rail { position: sticky; height: auto; max-height: calc(100vh - env(safe-area-inset-top, 0px)); border-right: 0; border-bottom: 1px solid var(--line); padding: 12px max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px)); gap: 12px; z-index: 20; }
+  .rail .brand h2 { margin-top: 4px; font-size: 17px; }
+  .rail .brand p, .rail .brand-mark { display: none; }
+  .rail-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .rail-toggle { display: inline-flex; }
+  .rail:not(.open) .nav-group, .rail:not(.open) .progress { display: none; }
+  main { padding-block: 26px 60px; }
+  .grid.c2, .opts, .q .ans { grid-template-columns: minmax(0,1fr); }
+  .flow-panel { grid-template-columns: minmax(0,1fr); }
+  .d-block { grid-template-columns: minmax(0,1fr); gap: 2px; }
+  .d-block dd { margin-bottom: 8px; }
+}
+@media (max-width: 520px) {
+  .grid.c4 { grid-template-columns: minmax(0,1fr); }
+  .layer { grid-template-columns: minmax(0,1fr); gap: 4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <nav class="rail" id="rail" aria-label="Course modules">
+    <div class="rail-top">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><i style="background:var(--c-plain)"></i><i style="background:var(--c-tls)"></i><i style="background:var(--c-mtls)"></i><i style="background:var(--c-istio)"></i></div>
+        <h2>Istio Ingress &amp; Egress</h2>
+        <p>Every object a gateway setup needs</p>
+      </div>
+      <button class="btn rail-toggle" id="railToggle" aria-expanded="false" aria-controls="rail">Modules</button>
+    </div>
+    <div class="progress"><span id="progressText">0 of 18 modules complete</span><div class="progress-bar"><i id="progressBar"></i></div></div>
+    <div id="navGroups" style="display:contents"></div>
+  </nav>
+  <main id="main"></main>
+</div>
+<div class="modal" id="modal" hidden><div class="modal-panel" role="dialog" aria-modal="true" aria-label="Object details"><div class="modal-top"><span class="kicker">Object</span><button class="btn" id="modalClose">Close</button></div><div id="modalBody"></div></div></div>
+
+<script src="objects.js"></script>
+<script src="scenarios.js"></script>
+<script>
+(function () {
+'use strict';
+var KEY = 'istio-gw-course-done';
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+/* ------------------------------------------------------------ data */
+var MODULES = [
+  { id: 'overview', group: 'Start here', title: 'The big picture' },
+  { id: 'traffic', group: 'Start here', title: 'TCP, TLS and mTLS on the wire' },
+  { id: 'catalog', group: 'Start here', title: 'Every object at a glance' },
+  { id: 'foundation', group: 'Platform', title: 'Mesh and gateway foundation' },
+  { id: 'certs', group: 'Platform', title: 'Certificates and Secrets' },
+  { id: 'in-https', group: 'Ingress', title: 'HTTPS, TLS at the gateway' },
+  { id: 'in-mtls', group: 'Ingress', title: 'Mutual TLS, client certs' },
+  { id: 'in-pass', group: 'Ingress', title: 'TLS passthrough' },
+  { id: 'in-tcp', group: 'Ingress', title: 'Raw TCP' },
+  { id: 'eg-orig', group: 'Egress', title: 'TLS origination' },
+  { id: 'eg-mtls', group: 'Egress', title: 'Mutual TLS origination' },
+  { id: 'eg-pass', group: 'Egress', title: 'TLS passthrough' },
+  { id: 'eg-tcp', group: 'Egress', title: 'Raw TCP' },
+  { id: 'tenant', group: 'Operate', title: 'Tenant namespace kit' },
+  { id: 'lockdown', group: 'Operate', title: 'Locking down egress' },
+  { id: 'troubleshoot', group: 'Operate', title: 'Verify and troubleshoot' },
+  { id: 'gatewayapi', group: 'Operate', title: 'Kubernetes Gateway API' },
+  { id: 'quiz', group: 'Operate', title: 'Knowledge check' }
+];
+var MOD = {}; MODULES.forEach(function (m, i) { m.i = i; MOD[m.id] = m; });
+
+var COPY = {
+  'foundation': { kicker: 'Platform · module 4', title: 'Mesh and gateway foundation', lede: 'Before any traffic flows, the platform team installs istiod, an ingress gateway in istio-ingress and an egress gateway in istio-egress. Each gateway is an ordinary Deployment and Service running Envoy, plus the RBAC it needs to read TLS Secrets.', key: 'A Gateway object never creates pods. It configures pods that already exist and carry the label it selects. Here that label is istio=ingressgateway or istio=egressgateway.' },
+  'certs': { kicker: 'Platform · module 5', title: 'Certificates and Secrets', lede: 'cert-manager issues and renews certificates and writes them into Kubernetes Secrets. Istio gateways load those Secrets by name. What decides which namespace a Secret goes in is the component that holds the private key and does the TLS.', key: 'Whoever terminates or originates the TLS needs the Secret in its own namespace. Ingress SIMPLE and MUTUAL: istio-ingress. Passthrough: the app\'s namespace. Egress mTLS origination: istio-egress.' },
+  'in-https': { kicker: 'Ingress · scenario 1 · TLS terminated at the gateway', title: 'HTTPS with TLS termination', lede: 'The most common setup. The gateway holds the public certificate for shop.example.com, decrypts, routes on Host and path, then re-encrypts with Istio mTLS to the storefront pod.', key: 'The platform owns the listener and the certificate (Gateway + Secret in istio-ingress). The tenant owns the routing and access rules (VirtualService + AuthorizationPolicy in shop).' },
+  'in-mtls': { kicker: 'Ingress · scenario 2 · client certificates', title: 'Mutual TLS with client certificates', lede: 'Partners must prove who they are with a certificate before any request is read. The gateway verifies the client certificate against a private partner CA, then proceeds exactly like HTTPS termination.', key: 'MUTUAL adds one thing to SIMPLE: a ca.crt to verify clients against. The partner\'s certificate ends at the gateway; inside the mesh, the gateway\'s own identity is what tenants authorize.' },
+  'in-pass': { kicker: 'Ingress · scenario 3 · no decryption at the edge', title: 'TLS passthrough', lede: 'The gateway reads only the SNI from the TLS handshake and forwards the encrypted stream to the app, which terminates TLS itself. Use it when the app must hold its own key, or for end-to-end encryption to the pod.', key: 'Protocol TLS, mode PASSTHROUGH, tls routes with sniHosts. No credentialName on the Gateway; the certificate lives with the app.' },
+  'in-tcp': { kicker: 'Ingress · scenario 4 · bytes, not requests', title: 'Raw TCP', lede: 'A PostgreSQL database exposed to selected partner networks. No hostnames, no TLS handled by Istio at the edge: the port is the only routing key.', key: 'Three things must agree on the port: the gateway Service, the Gateway server and the VirtualService tcp match. Lock it down by source IP at the gateway.' },
+  'eg-orig': { kicker: 'Egress · scenario 5 · gateway adds TLS', title: 'TLS origination', lede: 'The app calls http://api.payments.example.com. The sidecar sends it inside Istio mTLS to the egress gateway, which checks who is calling, then opens real TLS to the external API.', key: 'One VirtualService with two rules handles both hops. The mesh rule sends traffic to the egress gateway; the gateway rule sends it on to the internet. DestinationRules add the TLS on each hop.' },
+  'eg-mtls': { kicker: 'Egress · scenario 6 · gateway presents a client cert', title: 'Mutual TLS origination', lede: 'bank.example.net only accepts clients with a certificate it trusts. The egress gateway holds that client certificate, so applications never touch the bank\'s key material.', key: 'Same as TLS origination, with mode MUTUAL and a credentialName. The Secret lives in istio-egress, and the egress gateway needs the Secret-reading Role.' },
+  'eg-pass': { kicker: 'Egress · scenario 7 · app does its own TLS', title: 'TLS passthrough', lede: 'reporter calls https://files.example.org itself. The sidecar and egress gateway route the encrypted stream by SNI without decrypting it, so the egress gateway is still the single exit point.', key: 'Passthrough keeps the egress chokepoint but gives up visibility: no paths, no caller identity at the egress gateway, only SNI.' },
+  'eg-tcp': { kicker: 'Egress · scenario 8 · external database', title: 'Raw TCP', lede: 'reporter writes backups to an external PostgreSQL. The TCP stream travels inside Istio mTLS to the egress gateway on a dedicated port, so the gateway still knows the caller and the destination.', key: 'TCP has no hostname, so the sidecar needs an IP to match on. DNS auto-allocation (or explicit addresses) gives each external TCP host its own virtual IP.' },
+  'lockdown': { kicker: 'Operate · module 15', title: 'Locking down egress', lede: 'An egress gateway is only a control point if traffic cannot go around it. Five layers work together, in the order a packet meets them. Each one covers a way around the previous layer.', key: 'Istio rules are enforced by Envoy inside the pod. The NetworkPolicy is enforced by the node. You need both: Istio for routing and identity, the CNI for the guarantee.' }
+};
+
+var FAM_LABEL = { istio: 'Istio', k8s: 'Kubernetes', cm: 'cert-manager', install: 'Install', gwapi: 'Gateway API' };
+var REQ_TAG = { required: 'REQ', recommended: 'REC', optional: 'OPT' };
+var REQ_TEXT = { required: 'Required', recommended: 'Recommended', optional: 'Optional' };
+var ENC_TEXT = { plain: 'Plain TCP / HTTP', tls: 'TLS (server proves identity)', mtls: 'mTLS (client proves identity too)', istio: 'Istio mTLS (automatic, SPIFFE identities)' };
+
+function zone(ns) { return { '': 'clu', 'istio-system': 'sys', 'istio-ingress': 'ing', 'istio-egress': 'egr', 'cert-manager': 'cm', 'shop': 'ten', 'billing': 'ten' }[ns] || 'ten'; }
+function laneName(ns) { return ns === '' ? 'cluster-scoped' : ns; }
+function laneSub(ns) { return { '': 'no namespace', 'istio-system': 'control plane', 'istio-ingress': 'platform · ingress', 'istio-egress': 'platform · egress', 'cert-manager': 'certificate authority', 'shop': 'tenant', 'billing': 'tenant' }[ns] || ''; }
+function kindLabel(k) { return (KINDS[k] && KINDS[k].label) || (k === 'HelmValues' ? 'Helm values' : k); }
+function fam(k) { return (KINDS[k] && KINDS[k].fam) || 'k8s'; }
+
+/* All edges across scenarios, deduplicated, for modals */
+var ALL_EDGES = (function () {
+  var seen = {}, out = [];
+  Object.keys(SC).forEach(function (s) { SC[s].edges.forEach(function (e) { var k = e[0] + '>' + e[1]; if (!seen[k]) { seen[k] = 1; out.push(e); } }); });
+  return out;
+})();
+function scenariosFor(id) { return Object.keys(SC).filter(function (s) { return SC[s].objects.indexOf(id) >= 0; }); }
+
+/* ------------------------------------------------------------ YAML */
+function hlVal(v) {
+  if (!v) return '';
+  var lead = v.match(/^\s*/)[0], t = v.slice(lead.length);
+  var cm = '', ci = t.search(/\s#\s/);
+  if (ci >= 0) { cm = t.slice(ci); t = t.slice(0, ci); }
+  var cls = 'v';
+  if (/^(["']).*\1$/.test(t)) cls = 't-s';
+  else if (/^(true|false|null|-?\d+(\.\d+)?|\{\}|\[\])$/.test(t)) cls = 't-n';
+  else if (/^[|>][-+]?$/.test(t)) cls = 't-p';
+  else if (/^\[.*\]$/.test(t)) cls = 't-s';
+  return lead + (cls === 'v' ? esc(t) : '<span class="' + cls + '">' + esc(t) + '</span>') + (cm ? '<span class="t-c">' + esc(cm) + '</span>' : '');
+}
+function hlLine(code, inBlock) {
+  if (/^\s*#/.test(code)) return '<span class="t-c">' + esc(code) + '</span>';
+  if (inBlock) return esc(code);
+  var m = code.match(/^(\s*)(-\s+)?([A-Za-z0-9_.\/"'-]+)(:)(\s.*)?$/);
+  if (m && !/^https?$/.test(m[3])) {
+    return m[1] + (m[2] ? '<span class="t-p">' + esc(m[2]) + '</span>' : '') + '<span class="t-k">' + esc(m[3]) + '</span><span class="t-p">:</span>' + hlVal(m[5] || '');
+  }
+  var d = code.match(/^(\s*)(-\s+)(.*)$/);
+  if (d) return d[1] + '<span class="t-p">' + esc(d[2]) + '</span>' + hlVal(d[3]);
+  return esc(code);
+}
+function yamlView(o) {
+  var lines = o.yaml.split('\n'), notes = [], rows = [], clean = [];
+  var blockIndent = -1;
+  lines.forEach(function (l) {
+    var i = l.indexOf('#!'), code = l, note = '';
+    if (i >= 0) { code = l.slice(0, i).replace(/\s+$/, ''); note = l.slice(i + 2).trim(); }
+    clean.push(code);
+    var ind = code.match(/^\s*/)[0].length;
+    var inBlock = blockIndent >= 0 && code.trim() !== '' && ind > blockIndent;
+    if (blockIndent >= 0 && !inBlock && code.trim() !== '') blockIndent = -1;
+    var html = hlLine(code, inBlock);
+    if (!inBlock && /:\s*[|>][-+]?\s*$/.test(code)) blockIndent = ind;
+    var n = 0;
+    if (note) { notes.push(note); n = notes.length; html += '<button class="mk" data-note="' + n + '" aria-label="Note ' + n + '">' + n + '</button>'; }
+    rows.push('<span class="ln"' + (n ? ' data-line="' + n + '"' : '') + '>' + (html || ' ') + '</span>');
+  });
+  var file = o.kind === 'HelmValues' ? o.name : (o.ns ? o.ns + '/' : '') + o.kind.toLowerCase() + '-' + o.name + '.yaml';
+  var id = 'y' + Math.random().toString(36).slice(2, 8);
+  window.__yaml = window.__yaml || {};
+  window.__yaml[id] = clean.join('\n');
+  return '<div class="yaml" data-yaml="' + id + '"><div class="yaml-bar"><span>' + esc(file) + '</span><button data-copy="' + id + '">Copy YAML</button></div>' +
+    '<pre><code>' + rows.join('') + '</code></pre>' +
+    (notes.length ? '<ol class="notes">' + notes.map(function (t, i) { return '<li data-note-li="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(t) + '</span></li>'; }).join('') + '</ol>' : '') +
+    '</div>';
+}
+
+/* ------------------------------------------------------------ object detail */
+function chip(id, label) {
+  var o = OBJ[id]; if (!o) return '';
+  return '<button class="chip" data-obj="' + id + '" title="' + esc(o.kind + ' ' + (o.ns ? o.ns + '/' : '') + o.name) + '"><span class="dot fam-' + fam(o.kind) + '"></span>' +
+    (label ? '<span class="lbl">' + esc(label) + '</span>' : '') + '<span class="k">' + esc(kindLabel(o.kind)) + '</span><span class="n">' + esc(o.name) + '</span></button>';
+}
+function nsTag(ns) { return '<span class="ns ' + zone(ns) + '">' + esc(laneName(ns)) + '</span>'; }
+function objDetail(id, edges) {
+  var o = OBJ[id], k = KINDS[o.kind] || {};
+  var out = edges.filter(function (e) { return e[0] === id; });
+  var inn = edges.filter(function (e) { return e[1] === id; });
+  var used = scenariosFor(id).filter(function (s) { return MOD[s]; });
+  return '<div class="detail">' +
+    '<div class="d-head"><span class="d-kind"><span class="dot fam-' + fam(o.kind) + '"></span>' + esc(kindLabel(o.kind)) + '</span><span class="d-api">' + esc(k.api || '') + '</span></div>' +
+    '<div class="d-head"><h3>' + esc(o.name) + '</h3>' + nsTag(o.ns) + '<span class="badge ' + o.req + '">' + REQ_TEXT[o.req] + '</span><span class="badge ' + o.owner + '">' + (o.owner === 'platform' ? 'Platform team' : 'Tenant team') + '</span></div>' +
+    '<dl class="d-block">' +
+    '<dt>Role here</dt><dd>' + esc(o.why) + '</dd>' +
+    '<dt>What a ' + esc(kindLabel(o.kind)) + ' does</dt><dd>' + esc(k.desc || '') + '</dd>' +
+    (out.length ? '<dt>Points to</dt><dd><div class="chips">' + out.map(function (e) { return chip(e[1], e[2]); }).join('') + '</div></dd>' : '') +
+    (inn.length ? '<dt>Used by</dt><dd><div class="chips">' + inn.map(function (e) { return chip(e[0], e[2]); }).join('') + '</div></dd>' : '') +
+    (used.length ? '<dt>Appears in</dt><dd><div class="chips">' + used.map(function (s) { return '<button class="chip" data-go="' + s + '"><span class="n" style="font-family:var(--f-body)">' + esc(MOD[s].group + ': ' + MOD[s].title) + '</span></button>'; }).join('') + '</div></dd>' : '') +
+    '</dl>' + yamlView(o) + '</div>';
+}
+
+/* ------------------------------------------------------------ object map */
+function graphSVG(scId) {
+  var sc = SC[scId], LW = 252, BW = 210, BH = 50, GAP = 12, TOP = 64, PX = 8;
+  var lanes = sc.lanes, pos = {}, counts = lanes.map(function () { return 0; });
+  sc.objects.forEach(function (id) {
+    var o = OBJ[id]; if (!o) { console.warn('missing object', id); return; }
+    var li = lanes.indexOf(o.ns); if (li < 0) { console.warn('no lane for', id, o.ns); return; }
+    var cx = PX + li * LW + (LW - 2 * PX) / 2;
+    pos[id] = { x: cx - BW / 2, y: TOP + counts[li] * (BH + GAP), lane: li };
+    counts[li]++;
+  });
+  var H = TOP + Math.max.apply(null, counts) * (BH + GAP) + 14, W = lanes.length * LW + PX;
+  var mk = 'mk-' + scId, mko = 'mko-' + scId;
+  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" style="--mk:url(#' + mk + ');--mk-on:url(#' + mko + ')" role="img" aria-label="Object relationship map">';
+  s += '<defs><marker id="' + mk + '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--muted)"/></marker>' +
+       '<marker id="' + mko + '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--accent)"/></marker></defs>';
+  lanes.forEach(function (ns, i) {
+    var z = zone(ns), x = PX + i * LW;
+    s += '<rect class="lane" x="' + x + '" y="6" width="' + (LW - 2 * PX) + '" height="' + (H - 12) + '" rx="12" style="fill:var(--z-' + z + ');stroke:var(--z-' + z + '-b)"/>';
+    s += '<text class="lane-l" x="' + (x + 14) + '" y="30">' + esc(laneName(ns)) + '</text><text class="lane-s" x="' + (x + 14) + '" y="47">' + esc(laneSub(ns)) + '</text>';
+  });
+  var edges = '', labels = '';
+  sc.edges.forEach(function (e, i) {
+    var a = pos[e[0]], b = pos[e[1]]; if (!a || !b) { console.warn('bad edge', e); return; }
+    var x1, y1 = a.y + BH / 2, x2, y2 = b.y + BH / 2, d, mx, my;
+    if (a.lane < b.lane) { x1 = a.x + BW; x2 = b.x - 2; var c = (x2 - x1) / 2; d = [x1, y1, x1 + c, y1, x2 - c, y2, x2, y2]; }
+    else if (a.lane > b.lane) { x1 = a.x; x2 = b.x + BW + 2; var c2 = (x1 - x2) / 2; d = [x1, y1, x1 - c2, y1, x2 + c2, y2, x2, y2]; }
+    else { x1 = a.x + BW; x2 = b.x + BW + 2; var bend = 26 + Math.abs(y2 - y1) * 0.12; d = [x1, y1, x1 + bend, y1, x2 + bend, y2, x2, y2]; }
+    mx = (d[0] + 3 * d[2] + 3 * d[4] + d[6]) / 8; my = (d[1] + 3 * d[3] + 3 * d[5] + d[7]) / 8;
+    edges += '<path class="edge" data-e="' + i + '" data-a="' + e[0] + '" data-b="' + e[1] + '" d="M' + d[0] + ',' + d[1] + ' C' + d[2] + ',' + d[3] + ' ' + d[4] + ',' + d[5] + ' ' + d[6] + ',' + d[7] + '"/>';
+    var tw = Math.round(e[2].length * 5.6 + 12);
+    labels += '<g class="el" data-e="' + i + '" transform="translate(' + Math.round(mx - tw / 2) + ',' + Math.round(my - 9) + ')"><rect width="' + tw + '" height="18" rx="5"/><text x="6" y="12.5">' + esc(e[2]) + '</text></g>';
+  });
+  var nodes = '';
+  sc.objects.forEach(function (id) {
+    var p = pos[id]; if (!p) return; var o = OBJ[id];
+    var nm = o.name.length > 27 ? o.name.slice(0, 26) + '…' : o.name;
+    nodes += '<g class="node ' + o.req + '" data-id="' + id + '" tabindex="0" role="button" aria-label="' + esc(o.kind + ' ' + o.name) + '" transform="translate(' + p.x + ',' + p.y + ')">' +
+      '<title>' + esc(o.kind + ' · ' + (o.ns ? o.ns + '/' : '') + o.name) + '</title>' +
+      '<rect class="box" width="' + BW + '" height="' + BH + '" rx="8"/>' +
+      '<rect x="12" y="11" width="8" height="8" rx="2" style="fill:var(--f-' + fam(o.kind) + ')"/>' +
+      '<text class="kind" x="26" y="19">' + esc(kindLabel(o.kind)) + '</text>' +
+      '<text class="tag" x="' + (BW - 10) + '" y="19" text-anchor="end">' + REQ_TAG[o.req] + '</text>' +
+      '<text class="nm" x="12" y="38">' + esc(nm) + '</text></g>';
+  });
+  return s + edges + nodes + labels + '</svg>';
+}
+function graphFocus(svg, id, cls) {
+  $$('.node.' + cls, svg).forEach(function (n) { n.classList.remove(cls); });
+  if (cls === 'on') { $$('.edge.on, .el.on', svg).forEach(function (n) { n.classList.remove('on'); }); }
+  if (!id) { svg.classList.remove('hot'); if (cls === 'on') reapplySel(svg); return; }
+  var n = $('.node[data-id="' + id + '"]', svg); if (n) n.classList.add(cls);
+  if (cls === 'on') {
+    svg.classList.add('hot');
+    $$('.edge', svg).forEach(function (e) {
+      if (e.getAttribute('data-a') === id || e.getAttribute('data-b') === id) {
+        e.classList.add('on'); var l = $('.el[data-e="' + e.getAttribute('data-e') + '"]', svg); if (l) l.classList.add('on');
+        var other = e.getAttribute('data-a') === id ? e.getAttribute('data-b') : e.getAttribute('data-a');
+        var on = $('.node[data-id="' + other + '"]', svg); if (on) on.classList.add('on');
+      }
+    });
+  }
+}
+function reapplySel(svg) { var s = $('.node.sel', svg); if (s) { var id = s.getAttribute('data-id'); graphFocus(svg, id, 'on'); svg.classList.remove('hot'); } }
+
+/* ------------------------------------------------------------ wire view */
+function flowSVG(sc) {
+  var f = sc.flow, W = 1000, n = f.nodes.length, m = 92, step = (W - 2 * m) / (n - 1), cy = 128, NW = 152, NH = 68;
+  var s = '<svg viewBox="0 0 ' + W + ' 222" role="img" aria-label="Request path">';
+  s += '<line class="track" x1="' + m + '" y1="' + (cy + 60) + '" x2="' + (W - m) + '" y2="' + (cy + 60) + '"/>';
+  f.hops.forEach(function (h, i) {
+    var x1 = m + i * step + NW / 2, x2 = m + (i + 1) * step - NW / 2, mid = (x1 + x2) / 2;
+    var parts = h.label.split(' · ');
+    s += '<g class="hop" data-h="' + i + '">';
+    s += '<path class="l-' + h.enc + '" d="M' + x1 + ',' + cy + ' L' + x2 + ',' + cy + '"/>';
+    if (h.enc === 'mtls') s += '<path class="l-mtls-in" d="M' + x1 + ',' + cy + ' L' + x2 + ',' + cy + '"/>';
+    s += '<line class="lead" x1="' + mid + '" y1="' + (parts.length > 1 ? 58 : 44) + '" x2="' + mid + '" y2="' + (cy - 8) + '"/>';
+    s += '<text class="hlabel" text-anchor="middle" x="' + mid + '" y="' + 30 + '">' + esc(parts[0]) + '</text>';
+    if (parts[1]) s += '<text class="hlabel" text-anchor="middle" x="' + mid + '" y="' + 46 + '">' + esc(parts[1]) + '</text>';
+    s += '</g>';
+  });
+  f.nodes.forEach(function (nd, i) {
+    var cx = m + i * step;
+    s += '<g class="fnode" data-i="' + i + '" tabindex="0" role="button" aria-label="' + esc(nd.label) + '"><rect class="box" x="' + (cx - NW / 2) + '" y="' + (cy - NH / 2) + '" width="' + NW + '" height="' + NH + '" rx="10" style="fill:var(--z-' + nd.zone + ');stroke:var(--z-' + nd.zone + '-b)"/>' +
+      '<text class="t" text-anchor="middle" x="' + cx + '" y="' + (cy - 3) + '">' + esc(nd.label) + '</text>' +
+      '<text class="s" text-anchor="middle" x="' + cx + '" y="' + (cy + 16) + '">' + esc(nd.sub) + '</text></g>';
+  });
+  s += '<g class="packet" transform="translate(' + m + ',' + (cy + 60) + ')"><circle r="9"/></g>';
+  return s + '</svg>';
+}
+function initFlow(root, sc) {
+  var f = sc.flow, steps = f.steps, i = 0, timer = null;
+  var W = 1000, m = 92, step = (W - 2 * m) / (f.nodes.length - 1);
+  var svg = $('.flow svg', root), pk = $('.packet', svg);
+  var t = $('.fs-title', root), x = $('.fs-text', root), ob = $('.fs-objs', root), c = $('.fs-count', root);
+  var prev = $('[data-flow="prev"]', root), next = $('[data-flow="next"]', root), play = $('[data-flow="play"]', root);
+  function show(k) {
+    i = Math.max(0, Math.min(steps.length - 1, k));
+    var st = steps[i];
+    pk.setAttribute('transform', 'translate(' + (m + st.node * step) + ',188)');
+    $$('.fnode', svg).forEach(function (n) { n.classList.toggle('on', +n.getAttribute('data-i') === st.node); });
+    $$('.hop', svg).forEach(function (h) { h.classList.toggle('ahead', +h.getAttribute('data-h') >= st.node); });
+    c.textContent = 'Step ' + (i + 1) + ' of ' + steps.length;
+    t.textContent = st.title; x.textContent = st.text;
+    ob.innerHTML = st.objs.length ? st.objs.map(function (id) { return chip(id); }).join('') : '<span class="legend-row">No cluster objects act on this step.</span>';
+    prev.disabled = i === 0; next.disabled = i === steps.length - 1;
+  }
+  function stop() { if (timer) { clearInterval(timer); timer = null; play.textContent = 'Play'; } }
+  prev.addEventListener('click', function () { stop(); show(i - 1); });
+  next.addEventListener('click', function () { stop(); show(i + 1); });
+  play.addEventListener('click', function () {
+    if (timer) { stop(); return; }
+    if (i === steps.length - 1) show(0);
+    play.textContent = 'Pause';
+    timer = setInterval(function () { if (i >= steps.length - 1) { stop(); return; } show(i + 1); }, 3800);
+  });
+  $$('.fnode', svg).forEach(function (n) {
+    var go = function () { stop(); var ni = +n.getAttribute('data-i'); for (var k = 0; k < steps.length; k++) if (steps[k].node === ni) { show(k); return; } };
+    n.addEventListener('click', go);
+    n.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+  show(0);
+}
+
+/* ------------------------------------------------------------ scenario module */
+function legendEnc() {
+  return '<span class="enc plain"><i></i>' + ENC_TEXT.plain + '</span><span class="enc tls"><i></i>' + ENC_TEXT.tls + '</span><span class="enc mtls"><i></i>' + ENC_TEXT.mtls + '</span><span class="enc istio"><i></i>' + ENC_TEXT.istio + '</span>';
+}
+function legendGraph() {
+  return '<span><span class="dot fam-istio"></span> Istio CRD</span><span><span class="dot fam-k8s"></span> Kubernetes</span><span><span class="dot fam-cm"></span> cert-manager</span><span><span class="dot fam-install"></span> Helm values</span>' +
+    '<span><b>REQ</b> required</span><span><b style="color:var(--accent)">REC</b> recommended</span><span>dashed = optional</span><span>arrow = "refers to / acts on"</span>';
+}
+function objectsSection(scId, title, intro) {
+  var sc = SC[scId];
+  var groups = sc.lanes.map(function (ns) {
+    var items = sc.objects.filter(function (id) { return OBJ[id] && OBJ[id].ns === ns; });
+    if (!items.length) return '';
+    return '<div class="grp">' + nsTag(ns) + items.map(function (id) {
+      var o = OBJ[id];
+      return '<button class="ol-item" data-sel="' + id + '"><span class="dot fam-' + fam(o.kind) + '"></span><span class="txt"><small>' + esc(kindLabel(o.kind)) + ' · ' + REQ_TEXT[o.req].toLowerCase() + '</small><span>' + esc(o.name) + '</span></span></button>';
+    }).join('') + '</div>';
+  }).join('');
+  var counts = { platform: 0, tenant: 0 };
+  sc.objects.forEach(function (id) { counts[OBJ[id].owner]++; });
+  return '<section><h2>' + esc(title || 'Object map') + '</h2>' +
+    '<p class="prose">' + (intro || 'Every object this path depends on, in the namespace where it lives. Hover an object to see what it points to; select it to read its YAML with notes.') + ' <span class="badge platform">' + counts.platform + ' platform</span> <span class="badge tenant">' + counts.tenant + ' tenant</span></p>' +
+    '<div class="figure graph"><div class="scroll-x">' + graphSVG(scId) + '</div><div class="fig-foot">' + legendGraph() + '</div></div></section>' +
+    '<section class="objwrap" aria-label="Objects and YAML"><div class="objlist">' + groups + '</div><div class="obj-detail"></div></section>';
+}
+function headHTML(cp, m) {
+  return '<header class="mod-head"><p class="kicker">' + esc(cp.kicker) + '</p><h1>' + esc(cp.title) + '</h1><p class="lede">' + esc(cp.lede) + '</p>' +
+    (cp.key ? '<div class="keyidea"><b>Key idea</b><p>' + esc(cp.key) + '</p></div>' : '') + '</header>';
+}
+function renderScenario(id) {
+  var sc = SC[id], cp = COPY[id];
+  var h = headHTML(cp);
+  if (sc.flow) {
+    h += '<section><h2>On the wire</h2><p class="prose">Step through one request. Lines show how the bytes are protected on each hop; the objects acting at each step are listed below the diagram.</p>' +
+      '<div class="figure flow"><div class="scroll-x">' + flowSVG(sc) + '</div>' +
+      '<div class="flow-panel"><div><span class="count fs-count"></span><h3 class="fs-title"></h3><p class="fs-text"></p><div class="chips fs-objs"></div></div>' +
+      '<div class="flow-ctrls"><button class="btn" data-flow="prev">Back</button><button class="btn" data-flow="play">Play</button><button class="btn primary" data-flow="next">Next step</button></div></div>' +
+      '<div class="fig-foot">' + legendEnc() + '</div></div></section>';
+  }
+  h += objectsSection(id);
+  if (sc.test) h += '<section><h2>Try it</h2><p class="prose">Commands to prove each layer works, run from a machine with kubectl and istioctl access.</p><div class="shell-block"><pre>' + esc(sc.test) + '</pre></div></section>';
+  if (sc.gotchas) h += '<section><h2>Gotchas</h2><ul class="gotchas">' + sc.gotchas.map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul></section>';
+  return h;
+}
+function initObjects(root, scId) {
+  var sc = SC[scId], svg = $('.graph svg', root), det = $('.obj-detail', root);
+  function select(id, scroll) {
+    graphFocus(svg, id, 'sel'); graphFocus(svg, id, 'on'); svg.classList.remove('hot');
+    $$('.ol-item', root).forEach(function (b) { b.classList.toggle('sel', b.getAttribute('data-sel') === id); });
+    det.innerHTML = objDetail(id, sc.edges);
+    if (scroll) det.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+  }
+  root.__select = select;
+  $$('.node', svg).forEach(function (n) {
+    var id = n.getAttribute('data-id');
+    n.addEventListener('mouseenter', function () { graphFocus(svg, id, 'on'); });
+    n.addEventListener('mouseleave', function () { graphFocus(svg, null, 'on'); });
+    n.addEventListener('click', function () { select(id, true); });
+    n.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(id, true); } });
+  });
+  root.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-sel]'); if (b && root.contains(b)) select(b.getAttribute('data-sel'), false);
+  });
+  select(sc.focus || sc.objects[0], false);
+}
+
+/* ------------------------------------------------------------ overview */
+function mapSVG() {
+  function zoneR(x, y, w, h, z, label) { return '<g class="zone"><rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="12" style="fill:var(--z-' + z + ');stroke:var(--z-' + z + '-b)"/><text class="zlabel" x="' + (x + 12) + '" y="' + (y + 20) + '">' + label + '</text></g>'; }
+  function pod(x, y, w, h, t, sub) { return '<g class="pod"><rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="8"/><text x="' + (x + w / 2) + '" y="' + (y + (sub ? h / 2 - 2 : h / 2 + 4)) + '" text-anchor="middle">' + t + '</text>' + (sub ? '<text class="s" x="' + (x + w / 2) + '" y="' + (y + h / 2 + 13) + '" text-anchor="middle">' + sub + '</text>' : '') + '</g>'; }
+  function seg(d, enc) { return enc === 'mtls' ? '<path class="w l-mtls" d="' + d + '"/><path class="l-mtls-in" d="' + d + '"/>' : '<path class="w l-' + enc + '" d="' + d + '"/>'; }
+  function route(go, title, parts) { return '<g class="route" data-go="' + go + '" tabindex="0" role="link" aria-label="' + title + '"><title>' + title + '</title>' + parts.map(function (p) { return seg(p[0], p[1]); }).join('') + '</g>'; }
+  function cv(x1, y1, x2, y2) { var c = (x2 - x1) / 2; return 'M' + x1 + ',' + y1 + ' C' + (x1 + c) + ',' + y1 + ' ' + (x2 - c) + ',' + y2 + ' ' + x2 + ',' + y2; }
+  var s = '<svg viewBox="0 0 1120 600" role="img" aria-label="Cluster map of all eight traffic paths">';
+  s += '<text x="95" y="40" text-anchor="middle" style="font-weight:700;font-size:13px">Internet clients</text>';
+  s += '<text x="1025" y="40" text-anchor="middle" style="font-weight:700;font-size:13px">External services</text>';
+  s += '<rect x="190" y="14" width="730" height="572" rx="18" style="fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:6 5"/>';
+  s += '<text x="206" y="36" style="font-weight:700;font-size:13px">Kubernetes cluster</text>';
+  s += zoneR(430, 44, 250, 66, 'sys', 'istio-system') + pod(560, 58, 104, 38, 'istiod');
+  s += zoneR(210, 130, 180, 436, 'ing', 'istio-ingress');
+  s += zoneR(430, 130, 250, 196, 'ten', 'shop');
+  s += zoneR(430, 346, 250, 220, 'ten', 'billing');
+  s += zoneR(720, 130, 180, 436, 'egr', 'istio-egress');
+  // istiod config
+  s += '<path class="cfg" d="M560,82 C420,82 330,150 300,300"/><path class="cfg" d="M664,82 C790,82 820,200 810,330"/>';
+  s += '<text class="cfgl" x="700" y="74">config + certs (xDS, SDS)</text>';
+  // ingress routes
+  s += route('in-https', 'HTTPS, TLS terminated at the gateway', [[cv(170, 192, 230, 312), 'tls'], [cv(370, 312, 450, 192), 'istio']]);
+  s += route('in-mtls', 'Mutual TLS with client certificates', [[cv(170, 262, 230, 324), 'mtls'], [cv(370, 324, 450, 262), 'istio']]);
+  s += route('in-pass', 'TLS passthrough to the app', [[cv(170, 406, 230, 340), 'tls'], [cv(370, 340, 450, 406), 'istio']]);
+  s += route('in-tcp', 'Raw TCP to PostgreSQL', [[cv(170, 466, 230, 352), 'plain'], [cv(370, 352, 450, 466), 'istio']]);
+  // egress routes
+  s += route('eg-orig', 'Egress TLS origination', [[cv(660, 186, 740, 342), 'istio'], [cv(880, 342, 945, 172), 'tls']]);
+  s += route('eg-mtls', 'Egress mutual TLS origination', [[cv(660, 198, 740, 354), 'istio'], [cv(880, 354, 945, 242), 'mtls']]);
+  s += route('eg-pass', 'Egress TLS passthrough', [[cv(660, 520, 740, 370), 'tls'], [cv(880, 370, 945, 422), 'tls']]);
+  s += route('eg-tcp', 'Egress raw TCP', [[cv(660, 532, 740, 382), 'istio'], [cv(880, 382, 945, 492), 'plain']]);
+  // pods
+  s += pod(230, 300, 140, 64, 'ingress gateway', 'Envoy · LoadBalancer');
+  s += pod(450, 170, 210, 44, 'storefront', 'receives HTTPS · calls out') + pod(450, 240, 210, 44, 'partner-api', 'mTLS partners');
+  s += pod(450, 384, 210, 44, 'secure-docs', 'terminates its own TLS') + pod(450, 444, 210, 44, 'ledger-db', 'PostgreSQL :5432') + pod(450, 504, 210, 44, 'reporter', 'calls files + backup-db');
+  s += pod(740, 330, 140, 64, 'egress gateway', 'Envoy · ClusterIP');
+  // clients
+  s += pod(20, 170, 150, 44, 'Browser', 'HTTPS') + pod(20, 240, 150, 44, 'Partner system', 'client certificate') + pod(20, 384, 150, 44, 'Docs reader', 'TLS to the app') + pod(20, 444, 150, 44, 'psql client', 'TCP :5432');
+  // externals
+  s += pod(945, 150, 160, 44, 'api.payments', '.example.com') + pod(945, 220, 160, 44, 'bank.example.net', 'requires client cert') + pod(945, 400, 160, 44, 'files.example.org', 'HTTPS') + pod(945, 470, 160, 44, 'backup-db', '.example.org:5432');
+  return s + '</svg>';
+}
+function renderOverview() {
+  var rows = [
+    ['Gateway', 'The gateway pods its selector matches', 'Ports, hostnames and TLS mode of each listener'],
+    ['VirtualService', 'Gateways named in gateways:, plus sidecars if mesh is listed', 'Where requests for a host go'],
+    ['DestinationRule', 'The proxy sending the traffic (client side)', 'TLS used on the outgoing connection, subsets, load balancing'],
+    ['ServiceEntry', 'Every proxy in the namespaces it is exported to', 'That an external host exists, its ports and protocols'],
+    ['Sidecar', 'Sidecars in its namespace', 'Which hosts they can see, and what happens to unknown ones'],
+    ['PeerAuthentication', 'Receiving sidecars (not gateway listeners)', 'Whether incoming connections must be Istio mTLS'],
+    ['AuthorizationPolicy', 'The receiving proxy, sidecar or gateway', 'Who may call, on which port, host, path or SNI'],
+    ['Secret (credentialName)', 'Gateway pods in the same namespace, via istiod (SDS)', 'Certificates for TLS termination or origination'],
+    ['Secret (volume)', 'The app container that mounts it', 'Certificates the app uses itself (passthrough)']
+  ];
+  return '<header class="mod-head"><p class="kicker">Start here · module 1</p><h1>How traffic gets in and out of an Istio mesh</h1>' +
+    '<p class="lede">This course builds one complete setup: an ingress gateway that accepts HTTPS, mutual TLS, TLS passthrough and raw TCP, and an egress gateway that handles TLS origination, mutual TLS origination, passthrough and TCP on the way out. Every object is shown in YAML, explained line by line, and placed in the namespace where it belongs.</p>' +
+    '<div class="keyidea"><b>Read objects by three questions</b><p>Where does it live? Which proxy reads it? What does it point to? Almost every gateway problem is a wrong answer to one of these.</p></div></header>' +
+    '<section><h2>The map</h2><p class="prose">Two platform namespaces hold the gateways. Two tenant namespaces, <code>shop</code> and <code>billing</code>, receive traffic from the ingress gateway and send traffic through the egress gateway. Each colored line is one scenario in this course. Select a line to open it.</p>' +
+    '<div class="figure map"><div class="scroll-x">' + mapSVG() + '</div><div class="fig-foot">' + legendEnc() + '</div></div></section>' +
+    '<section><h2>Who owns what</h2><div class="grid c3">' +
+    '<div class="card"><h3>Platform team</h3><p><span class="ns sys">istio-system</span> <span class="ns ing">istio-ingress</span> <span class="ns egr">istio-egress</span></p><ul><li>Installs istiod and both gateways</li><li>Owns Gateway objects: ports, hosts, TLS mode</li><li>Holds ingress certificates and egress client certificates</li><li>Decides which workloads may leave through the egress gateway</li></ul></div>' +
+    '<div class="card"><h3>Tenant teams</h3><p><span class="ns ten">shop</span> <span class="ns ten">billing</span></p><ul><li>Bind routes to platform Gateways with VirtualServices</li><li>Declare external hosts with ServiceEntries</li><li>Route their outbound traffic through the egress gateway</li><li>Decide who may call their workloads</li></ul></div>' +
+    '<div class="card"><h3>Certificate authority</h3><p><span class="ns cm">cert-manager</span> <span class="ns">cluster-scoped</span></p><ul><li>ClusterIssuers for a public CA and a private partner CA</li><li>Certificates that write Secrets into the namespace that needs them</li><li>Automatic renewal, picked up by gateways without restarts</li></ul></div>' +
+    '</div></section>' +
+    '<section><h2>Which proxy reads which object</h2><p class="prose">Istio objects are not applied where they are created. istiod collects them and pushes each one to the proxies it concerns. Knowing which proxy that is explains why namespaces and <code>exportTo</code> matter so much.</p>' +
+    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Object</th><th>Read by</th><th>Decides</th></tr></thead><tbody>' +
+    rows.map(function (r) { return '<tr><td><b>' + esc(r[0]) + '</b></td><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td></tr>'; }).join('') + '</tbody></table></div></section>' +
+    '<section><h2>How to use this course</h2><div class="grid c4">' +
+    '<div class="card"><h3>Wire view</h3><p>Each scenario starts with a step-through of one request, showing how every hop is protected and which objects act there.</p></div>' +
+    '<div class="card"><h3>Object map</h3><p>Every object the path needs, in its namespace, with arrows for references. Hover to trace, select to read.</p></div>' +
+    '<div class="card"><h3>Annotated YAML</h3><p>Numbered notes explain the fields that matter. Copy gives you clean YAML without the notes.</p></div>' +
+    '<div class="card"><h3>Check yourself</h3><p>Commands to verify each scenario, a troubleshooting table, and a quiz at the end. Mark modules complete as you go.</p></div>' +
+    '</div></section>';
+}
+
+/* ------------------------------------------------------------ traffic module */
+function hsSVG(kind) {
+  var c = { plain: 'var(--c-plain)', tls: 'var(--c-tls)', mtls: 'var(--c-mtls)', istio: 'var(--c-istio)' }[kind];
+  var msgs = {
+    plain: [['→', 'SYN, then data'], ['←', 'data']],
+    tls: [['→', 'ClientHello (SNI in clear)'], ['←', 'server certificate'], ['⇄', 'encrypted data']],
+    mtls: [['→', 'ClientHello (SNI)'], ['←', 'server cert + cert request'], ['→', 'client certificate'], ['⇄', 'encrypted data']],
+    istio: [['→', 'ClientHello (SNI, ALPN istio)'], ['←', 'SPIFFE cert from istiod'], ['→', 'SPIFFE cert from istiod'], ['⇄', 'encrypted data']]
+  }[kind];
+  var L = { plain: ['client', 'server'], tls: ['client', 'server'], mtls: ['client', 'server'], istio: ['proxy', 'proxy'] }[kind];
+  var h = 34 + msgs.length * 26;
+  var s = '<svg viewBox="0 0 260 ' + h + '"><rect class="party" x="4" y="4" width="62" height="22" rx="5"/><text class="pt" x="35" y="19" text-anchor="middle">' + L[0] + '</text><rect class="party" x="194" y="4" width="62" height="22" rx="5"/><text class="pt" x="225" y="19" text-anchor="middle">' + L[1] + '</text>';
+  s += '<line x1="35" y1="26" x2="35" y2="' + h + '" style="stroke:var(--line)"/><line x1="225" y1="26" x2="225" y2="' + h + '" style="stroke:var(--line)"/>';
+  msgs.forEach(function (mm, i) {
+    var y = 44 + i * 26, d = mm[0];
+    var x1 = d === '←' ? 222 : 38, x2 = d === '←' ? 38 : 222;
+    s += '<line class="ar" x1="' + x1 + '" y1="' + y + '" x2="' + x2 + '" y2="' + y + '" style="stroke:' + c + (kind === 'plain' ? ';stroke-dasharray:5 4' : '') + (d === '⇄' ? ';stroke-width:4' : '') + '"/>';
+    if (d !== '⇄') s += '<path d="M' + x2 + ',' + y + ' l' + (d === '←' ? 7 : -7) + ',-4 v8 z" style="fill:' + c + '"/>';
+    s += '<text x="130" y="' + (y - 5) + '" text-anchor="middle">' + esc(mm[1]) + '</text>';
+  });
+  return s + '</svg>';
+}
+function renderTraffic() {
+  var cards = [
+    ['plain', 'Plain TCP or HTTP', 'Bytes travel unencrypted. Inside a pod (app to its own sidecar over localhost) this is normal and safe. Across a network it is readable by anyone on the path.', [['Ports and IPs', 1], ['Host and path', 1], ['Caller identity', 0]], 'Raw TCP ingress and egress (outside the mesh hops); app to sidecar.'],
+    ['tls', 'TLS', 'The server proves its identity with a certificate; the client stays anonymous. SNI, the requested hostname, is sent in clear in the ClientHello, which is what passthrough routing reads.', [['SNI', 1], ['Host and path', 0], ['Caller identity', 0]], 'HTTPS ingress, passthrough both ways, TLS origination.'],
+    ['mtls', 'Mutual TLS', 'Both sides present certificates. The server checks the client certificate against a CA it trusts (ca.crt) before any application data flows.', [['SNI', 1], ['Client certificate', 1], ['Host and path', 0]], 'Partner ingress with client certs; mTLS origination to the bank.'],
+    ['istio', 'Istio mTLS', 'Mutual TLS between proxies, fully automatic. istiod issues every workload a short-lived certificate whose SAN is its SPIFFE ID, and rotates it. This identity is what AuthorizationPolicy principals match.', [['SNI', 1], ['Caller principal', 1], ['Host and path (to the receiver)', 1]], 'Every hop between gateways and sidecars.']
+  ];
+  var gwModes = [
+    ['SIMPLE', 'Gateway terminates TLS with its own certificate (credentialName). Client is anonymous.', 'HTTPS ingress'],
+    ['MUTUAL', 'Like SIMPLE, and the client must present a certificate signed by ca.crt.', 'Partner ingress'],
+    ['PASSTHROUGH', 'No termination. Route on SNI, forward encrypted bytes. Protocol must be TLS.', 'Passthrough ingress and egress'],
+    ['ISTIO_MUTUAL', 'Terminate Istio mTLS using mesh certificates. Used where traffic arrives from sidecars.', 'Egress origination and TCP'],
+    ['OPTIONAL_MUTUAL', 'Ask for a client certificate but allow clients without one.', 'Not used here'],
+    ['AUTO_PASSTHROUGH', 'SNI-based routing without VirtualServices, for multi-cluster east-west gateways.', 'Not used here']
+  ];
+  var drModes = [
+    ['DISABLE', 'Plaintext to the destination.', 'Never with STRICT receivers'],
+    ['SIMPLE', 'Originate TLS; verify the server.', 'Egress TLS origination'],
+    ['MUTUAL', 'Originate TLS and present a client certificate (credentialName at gateways).', 'Egress mTLS origination'],
+    ['ISTIO_MUTUAL', 'Istio mTLS with mesh certificates; set sni when the receiver is a gateway.', 'Sidecar to egress gateway, gateway to app']
+  ];
+  var paModes = [
+    ['STRICT', 'Only Istio mTLS accepted.', 'Tenant namespaces, mesh-wide'],
+    ['PERMISSIVE', 'mTLS and plaintext accepted. Default.', 'Migrations only'],
+    ['DISABLE', 'Plaintext only.', 'Avoid']
+  ];
+  function modeTable(title, rows) { return '<div class="card" style="padding:0;overflow:hidden"><div style="padding:14px 16px 6px"><h3>' + title + '</h3></div><div class="scroll-x"><table class="tbl" style="min-width:520px"><thead><tr><th>Mode</th><th>Behavior</th><th>In this course</th></tr></thead><tbody>' + rows.map(function (r) { return '<tr><td class="mono"><code>' + r[0] + '</code></td><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td></tr>'; }).join('') + '</tbody></table></div></div>'; }
+  var strips = ['in-https', 'in-mtls', 'in-pass', 'in-tcp', 'eg-orig', 'eg-mtls', 'eg-pass', 'eg-tcp'].map(function (id) {
+    var f = SC[id].flow, row = '';
+    f.nodes.forEach(function (n, i) { row += '<span class="st">' + esc(n.label) + '</span>'; if (f.hops[i]) row += '<span class="sg ' + f.hops[i].enc + '" title="' + esc(f.hops[i].label) + '"></span>'; });
+    return '<button class="strip" data-go="' + id + '"><span class="nm">' + esc(MOD[id].title) + '<small>' + esc(MOD[id].group) + '</small></span><span class="row">' + row + '</span></button>';
+  }).join('');
+  return headHTML({ kicker: 'Start here · module 2', title: 'TCP, TLS and mTLS on the wire', lede: 'Every scenario in this course is a chain of hops, and each hop is one of four things: plain, TLS, mutual TLS, or Istio mTLS. Which one it is decides what a proxy can see, which object configures it, and where the keys must be.', key: 'TLS is configured twice per hop: by the sender (DestinationRule, or the client app) and by the receiver (Gateway server, PeerAuthentication, or the server app). Both sides have to agree.' }) +
+    '<section><h2>Four ways bytes travel</h2><div class="grid c4">' + cards.map(function (c) {
+      return '<div class="card hs"><p style="margin:0 0 4px"><span class="enc ' + c[0] + '"><i></i></span></p><h3>' + c[1] + '</h3>' + hsSVG(c[0]) + '<p style="margin-top:10px">' + esc(c[2]) + '</p><p style="margin:0;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:600">A proxy in the middle sees</p><div class="hs-sees">' + c[3].map(function (x) { return '<span class="see ' + (x[1] ? 'y' : 'n') + '">' + esc(x[0]) + '</span>'; }).join('') + '</div><p style="margin-top:10px;font-size:13px;color:var(--muted)">' + esc(c[4]) + '</p></div>';
+    }).join('') + '</div></section>' +
+    '<section><h2>All eight paths side by side</h2><p class="prose">Read each row left to right. Select one to open its scenario.</p><div class="figure"><div class="scroll-x"><div class="strips">' + strips + '</div></div><div class="fig-foot">' + legendEnc() + '</div></div></section>' +
+    '<section><h2>TLS settings, per object</h2><p class="prose">The same word means different things on different objects. A Gateway server mode describes how the gateway <em>receives</em>; a DestinationRule mode describes how a proxy <em>sends</em>; PeerAuthentication describes what a sidecar <em>accepts</em>.</p>' +
+    '<div class="grid" style="grid-template-columns:minmax(0,1fr)">' + modeTable('Gateway · servers[].tls.mode (receiving at a gateway)', gwModes) + modeTable('DestinationRule · trafficPolicy.tls.mode (sending)', drModes) + modeTable('PeerAuthentication · mtls.mode (receiving at a sidecar)', paModes) + '</div></section>' +
+    '<section><h2>Protocols are declared, not guessed</h2><p class="prose">Istio needs to know whether a port carries HTTP, TLS or opaque TCP before it can route it. There are two places this is declared, and both must be right.</p><div class="grid c2">' +
+    '<div class="card"><h3>Gateway server <code>port.protocol</code></h3><ul><li><code>HTTP</code>, <code>HTTP2</code>, <code>GRPC</code>: plaintext HTTP; http routes</li><li><code>HTTPS</code>: TLS terminated (or ISTIO_MUTUAL), HTTP inside; http routes</li><li><code>TLS</code>: TLS seen as a stream; tls routes on SNI (passthrough), or tcp routes after ISTIO_MUTUAL termination</li><li><code>TCP</code>: opaque bytes; tcp routes on port</li></ul></div>' +
+    '<div class="card"><h3>Service and ServiceEntry ports</h3><ul><li>Name prefix: <code>http-</code>, <code>http2-</code>, <code>grpc-</code>, <code>tls-</code>, <code>https-</code>, <code>tcp-</code>, <code>mongo-</code>, <code>mysql-</code>, <code>redis-</code></li><li>Or <code>appProtocol: http</code> / <code>tls</code> / <code>tcp</code> on Kubernetes Services</li><li>ServiceEntry ports set <code>protocol</code> directly</li><li>Without a declaration Istio sniffs the first bytes, which adds delay and fails for server-first protocols</li></ul></div>' +
+    '</div></section>';
+}
+
+/* ------------------------------------------------------------ catalog */
+var EXTRA_KINDS = [
+  ['RequestAuthentication', 'security.istio.io/v1', 'istio', 'Validates JWTs on requests at a gateway or workload. Add it if clients authenticate with tokens; pair with an AuthorizationPolicy requiring requestPrincipals.'],
+  ['Telemetry', 'telemetry.istio.io/v1', 'istio', 'Tunes metrics, access logs and tracing per namespace or workload. Useful at gateways, never required for traffic to flow.'],
+  ['EnvoyFilter', 'networking.istio.io/v1alpha3', 'istio', 'Patches raw Envoy config. Not needed for any gateway pattern here; avoid unless no API covers your need, as patches break across upgrades.'],
+  ['ProxyConfig', 'networking.istio.io/v1beta1', 'istio', 'Per-workload proxy settings such as concurrency. The pod annotation proxy.istio.io/config does the same.'],
+  ['WasmPlugin', 'extensions.istio.io/v1alpha1', 'istio', 'Runs WebAssembly extensions in proxies, for example custom auth at the ingress gateway.'],
+  ['WorkloadEntry / WorkloadGroup', 'networking.istio.io/v1', 'istio', 'Brings VMs into the mesh. Unrelated to gateways unless VMs are backends.'],
+  ['HorizontalPodAutoscaler', 'autoscaling/v2', 'k8s', 'Scales gateway pods with load. Created by the gateway Helm chart (autoscaling values).'],
+  ['Bundle (trust-manager)', 'trust.cert-manager.io/v1alpha1', 'cm', 'Distributes CA certificates to many namespaces. An alternative to copying ca.crt into the -cacert Secret by hand.']
+];
+function renderCatalog() {
+  var kinds = Object.keys(KINDS).filter(function (k) { return fam(k) !== 'gwapi'; });
+  var rank = { required: 3, recommended: 2, optional: 1 };
+  var rows = kinds.map(function (k) {
+    var objs = Object.keys(OBJ).filter(function (id) { return OBJ[id].kind === k && fam(k) !== 'gwapi'; });
+    var nss = {}, best = 'optional', mods = {};
+    objs.forEach(function (id) {
+      nss[OBJ[id].ns] = 1;
+      if (rank[OBJ[id].req] > rank[best]) best = OBJ[id].req;
+      scenariosFor(id).forEach(function (s) { if (/^(in|eg)-/.test(s)) mods[s[0] === 'i' ? 'Ingress' : 'Egress'] = 1; });
+    });
+    return { k: k, objs: objs, ns: Object.keys(nss), req: best, used: Object.keys(mods).join(' + ') || 'Platform' };
+  });
+  rows.sort(function (a, b) { var o = ['istio', 'k8s', 'cm', 'install']; return o.indexOf(fam(a.k)) - o.indexOf(fam(b.k)); });
+  var body = rows.map(function (r, i) {
+    return '<tr class="cat-row" data-fam="' + fam(r.k) + '" data-cat="' + i + '" tabindex="0"><td><span class="dot fam-' + fam(r.k) + '"></span> <b>' + esc(kindLabel(r.k)) + '</b></td><td class="mono"><code>' + esc(KINDS[r.k].api) + '</code></td><td>' + r.ns.map(nsTag).join(' ') + '</td><td>' + esc(r.used) + '</td><td><span class="badge ' + r.req + '">' + REQ_TEXT[r.req] + '</span></td><td>' + r.objs.length + '</td></tr>' +
+      '<tr class="cat-more" data-more="' + i + '" hidden><td colspan="6"><p>' + esc(KINDS[r.k].desc) + '</p><div class="chips">' + r.objs.map(function (id) { return chip(id); }).join('') + '</div></td></tr>';
+  }).join('') + EXTRA_KINDS.map(function (e) {
+    return '<tr data-fam="' + e[2] + '"><td><span class="dot fam-' + e[2] + '"></span> <b>' + esc(e[0]) + '</b></td><td class="mono"><code>' + esc(e[1]) + '</code></td><td>—</td><td colspan="3">' + esc(e[3]) + ' <span class="badge none">Not needed here</span></td></tr>';
+  }).join('');
+  return headHTML({ kicker: 'Start here · module 3', title: 'Every object at a glance', lede: 'Every kind of object the setup uses, which API it comes from, the namespaces it appears in and how essential it is. Select a row to see what the kind does and every instance of it in this course. Kinds you might expect but do not need are listed at the end, so nothing is silently missing.', key: 'Istio itself needs only seven CRDs for all eight paths: Gateway, VirtualService, DestinationRule, ServiceEntry, Sidecar, PeerAuthentication and AuthorizationPolicy. Everything else is Kubernetes or cert-manager.' }) +
+    '<section><div class="chips" role="toolbar" aria-label="Filter by API family"><button class="chip" data-filter="all" aria-pressed="true"><span class="n" style="font-family:var(--f-body)">All</span></button><button class="chip" data-filter="istio"><span class="dot fam-istio"></span><span class="n" style="font-family:var(--f-body)">Istio</span></button><button class="chip" data-filter="k8s"><span class="dot fam-k8s"></span><span class="n" style="font-family:var(--f-body)">Kubernetes</span></button><button class="chip" data-filter="cm"><span class="dot fam-cm"></span><span class="n" style="font-family:var(--f-body)">cert-manager</span></button><button class="chip" data-filter="install"><span class="dot fam-install"></span><span class="n" style="font-family:var(--f-body)">Install</span></button></div>' +
+    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Kind</th><th>API</th><th>Lives in</th><th>Used for</th><th>Need</th><th>#</th></tr></thead><tbody>' + body + '</tbody></table></div></section>';
+}
+function initCatalog(root) {
+  root.addEventListener('click', function (e) {
+    var f = e.target.closest('[data-filter]');
+    if (f) {
+      var v = f.getAttribute('data-filter');
+      $$('[data-filter]', root).forEach(function (b) { b.setAttribute('aria-pressed', b === f ? 'true' : 'false'); b.style.borderColor = b === f ? 'var(--accent)' : ''; });
+      $$('tbody tr', root).forEach(function (tr) { if (tr.classList.contains('cat-more')) { tr.hidden = true; return; } tr.hidden = !(v === 'all' || tr.getAttribute('data-fam') === v); });
+      return;
+    }
+    var r = e.target.closest('.cat-row');
+    if (r && !e.target.closest('.chip')) { var m = $('[data-more="' + r.getAttribute('data-cat') + '"]', root); m.hidden = !m.hidden; }
+  });
+  root.addEventListener('keydown', function (e) { var r = e.target.closest('.cat-row'); if (r && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); r.click(); } });
+}
+
+/* ------------------------------------------------------------ foundation and certs */
+function renderFoundation() {
+  return headHTML(COPY.foundation) +
+    '<section><h2>Install order</h2><div class="shell-block"><pre>' + esc('helm repo add istio https://istio-release.storage.googleapis.com/charts && helm repo update\n\n# 1. CRDs (Gateway, VirtualService, DestinationRule, ServiceEntry, Sidecar, PeerAuthentication, AuthorizationPolicy, ...)\nhelm install istio-base istio/base -n istio-system --create-namespace\n\n# 2. Control plane, with mesh-wide settings\nhelm install istiod istio/istiod -n istio-system -f values-istiod.yaml --wait\n\n# 3. Gateways, each in its own namespace\nkubectl apply -f namespaces.yaml          # istio-ingress, istio-egress with injection enabled\nhelm install istio-ingressgateway istio/gateway -n istio-ingress -f values-ingress.yaml\nhelm install istio-egressgateway  istio/gateway -n istio-egress  -f values-egress.yaml\n\n# 4. Mesh-wide STRICT mTLS\nkubectl apply -f peerauthentication-default.yaml\n\n# 5. cert-manager (for the next module)\nhelm install cert-manager oci://quay.io/jetstack/charts/cert-manager -n cert-manager --create-namespace --set crds.enabled=true') + '</pre></div>' +
+    '<p class="prose">The Helm values objects generate the gateway Deployment, Service, ServiceAccount, Role and RoleBinding. They are shown expanded below so you know exactly what exists and why. Apply either the chart or the raw objects, not both.</p></section>' +
+    objectsSection('foundation', 'What the platform installs') +
+    '<section><h2>Gotchas</h2><ul class="gotchas"><li>The gateway pod label is a contract. If you name the Helm release something else, the label changes (istio=&lt;release minus "istio-"&gt;) and every Gateway selector must follow.</li><li>A Gateway object can only open ports the gateway Service exposes. Plan the port list with the Gateways.</li><li>Upgrade gateways after istiod. With image: auto they pick up the matching proxy version when the pods restart.</li><li>PeerAuthentication does not configure gateway listeners. Gateway servers decide what a gateway accepts.</li></ul></section>';
+}
+function renderCerts() {
+  var tbl = [
+    ['HTTPS ingress (SIMPLE)', 'Ingress gateway', 'istio-ingress', 'tls.crt, tls.key', 'Gateway tls.credentialName'],
+    ['mTLS ingress (MUTUAL)', 'Ingress gateway', 'istio-ingress', 'tls.crt, tls.key + ca.crt (or <name>-cacert)', 'Gateway tls.credentialName'],
+    ['Passthrough ingress', 'The application', 'billing (app namespace)', 'tls.crt, tls.key', 'Pod volume mount'],
+    ['TCP ingress', 'Nobody (Istio)', '—', '—', 'App-level TLS if any'],
+    ['TLS origination', 'Egress gateway', '— (system CA bundle)', 'optional ca.crt', 'DestinationRule tls SIMPLE'],
+    ['mTLS origination', 'Egress gateway', 'istio-egress', 'tls.crt, tls.key, ca.crt', 'DestinationRule tls.credentialName'],
+    ['Passthrough egress', 'The application', 'app trust store', '—', 'App config'],
+    ['Every mesh hop', 'Sidecars and gateways', 'none (istiod issues them)', 'automatic', 'ISTIO_MUTUAL']
+  ];
+  return headHTML(COPY.certs) +
+    '<section><h2>Who holds which key</h2><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Path</th><th>TLS done by</th><th>Secret namespace</th><th>Secret keys</th><th>Referenced from</th></tr></thead><tbody>' +
+    tbl.map(function (r) { return '<tr>' + r.map(function (c, i) { return '<td>' + (i === 3 ? '<code>' + esc(c) + '</code>' : esc(c)) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div></section>' +
+    '<section><h2>From issuer to listener</h2><div class="grid c4">' +
+    '<div class="card"><h3>1 · Issuer</h3><p>A ClusterIssuer says how to get certificates: ACME with DNS-01 for public names, a CA key pair for private ones.</p></div>' +
+    '<div class="card"><h3>2 · Certificate</h3><p>Created in the namespace that needs the result. Names the hosts, the issuer and the Secret to write.</p></div>' +
+    '<div class="card"><h3>3 · Secret</h3><p>cert-manager writes <code>tls.crt</code>, <code>tls.key</code> and sometimes <code>ca.crt</code>, and rewrites it on renewal.</p></div>' +
+    '<div class="card"><h3>4 · Consumer</h3><p>istiod watches the Secret and pushes it over SDS to gateways that reference it by credentialName. Apps mount it as files.</p></div>' +
+    '</div></section>' +
+    objectsSection('certs', 'Certificate objects and their consumers') +
+    '<section><h2>Gotchas</h2><ul class="gotchas"><li>credentialName never takes a namespace. It always resolves in the namespace of the gateway pods.</li><li>Secret key names are fixed: tls.crt, tls.key, ca.crt (also accepted: cert, key, cacert for generic Secrets). A Secret with other key names is ignored.</li><li>HTTP-01 challenges need the gateway to serve plain HTTP for the host. DNS-01 avoids that and also covers passthrough hosts.</li><li>Keep CA private keys in cert-manager\'s namespace. Gateways only ever need public CA certificates.</li></ul></section>';
+}
+
+/* ------------------------------------------------------------ tenant kit */
+var KIT_OPTS = [
+  ['in-https', 'Receive HTTPS', 'TLS terminated at the ingress gateway'],
+  ['in-mtls', 'Receive with client certs', 'Mutual TLS at the ingress gateway'],
+  ['in-pass', 'Receive TLS passthrough', 'Your app terminates TLS'],
+  ['in-tcp', 'Receive raw TCP', 'A port on the ingress gateway'],
+  ['eg-orig', 'Call out, gateway adds TLS', 'App speaks HTTP; egress gateway originates TLS'],
+  ['eg-mtls', 'Call out with a client cert', 'Egress gateway presents your certificate'],
+  ['eg-pass', 'Call out with your own TLS', 'Passthrough via the egress gateway'],
+  ['eg-tcp', 'Call out over TCP', 'External database through the egress gateway']
+];
+function renderTenant() {
+  return headHTML({ kicker: 'Operate · module 14', title: 'Tenant namespace kit', lede: 'Pick what a namespace needs to do, and get the complete list of objects, grouped by the namespace they live in and the team that owns them. In this course shop and billing play these roles; your namespace gets the same objects with your names.', key: 'Receiving needs a route onto a platform Gateway plus permission to be called. Sending needs a ServiceEntry, a route to the egress gateway, and permission at the egress gateway.' }) +
+    '<section><h2>What does the namespace need to do?</h2><div class="opts" id="kitOpts">' +
+    '<div class="grid" style="gap:8px"><h3>Receive from the internet</h3>' + KIT_OPTS.slice(0, 4).map(optH).join('') + '</div>' +
+    '<div class="grid" style="gap:8px"><h3>Send to the internet</h3>' + KIT_OPTS.slice(4).map(optH).join('') + '</div>' +
+    '</div></section><section><h2>Objects you need</h2><p class="prose" id="kitSummary"></p><div class="kit" id="kitOut"></div></section>' +
+    '<section><h2>Always true for a tenant namespace</h2><div class="grid c2">' +
+    '<div class="card"><h3>To receive</h3><ul><li>Namespace with <code>istio-injection: enabled</code> (or <code>istio.io/rev</code>)</li><li>Service with a declared protocol (port name or appProtocol)</li><li>VirtualService with <code>gateways: istio-ingress/&lt;gateway&gt;</code> and a host the Gateway allows for this namespace</li><li>AuthorizationPolicy allowing <code>cluster.local/ns/istio-ingress/sa/istio-ingressgateway</code>, if the namespace denies by default</li><li>Recommended: PeerAuthentication STRICT, DestinationRule ISTIO_MUTUAL, default-deny AuthorizationPolicy</li></ul></div>' +
+    '<div class="card"><h3>To send</h3><ul><li>A dedicated ServiceAccount per workload, so the egress gateway can tell callers apart</li><li>ServiceEntry per external host, <code>exportTo</code> including <code>istio-egress</code></li><li>VirtualService with <code>gateways: [mesh, istio-egress/&lt;gateway&gt;]</code>, exported to <code>istio-egress</code></li><li>DestinationRule for the egress gateway host, one subset per destination (ISTIO_MUTUAL + sni, or no TLS for passthrough)</li><li>If you use a Sidecar resource: <code>istio-egress/*</code> in egress.hosts</li><li>Recommended: NetworkPolicy blocking direct internet egress</li></ul></div>' +
+    '</div></section>';
+  function optH(o) { return '<label class="opt"><input type="checkbox" id="kit-' + o[0] + '" value="' + o[0] + '"' + (o[0] === 'in-https' || o[0] === 'eg-orig' ? ' checked' : '') + '><span>' + esc(o[1]) + '<small>' + esc(o[2]) + '</small></span></label>'; }
+}
+function initTenant(root) {
+  var order = ['shop', 'billing', 'istio-ingress', 'istio-egress', 'istio-system', 'cert-manager', ''];
+  function upd() {
+    var picked = $$('#kitOpts input', root).filter(function (i) { return i.checked; }).map(function (i) { return i.value; });
+    var by = {}, seen = {};
+    picked.forEach(function (s) { SC[s].objects.forEach(function (id) { if (seen[id]) return; seen[id] = 1; var ns = OBJ[id].ns; (by[ns] = by[ns] || []).push(id); }); });
+    var total = Object.keys(seen).length, ten = Object.keys(seen).filter(function (id) { return OBJ[id].owner === 'tenant'; }).length;
+    $('#kitSummary', root).textContent = picked.length ? total + ' objects across ' + Object.keys(by).length + ' namespaces: ' + ten + ' created by the tenant team, ' + (total - ten) + ' by the platform team. Foundation objects (istiod, gateway Deployments) are included where the path depends on them. Select any object to read its YAML.' : 'Pick at least one capability above.';
+    $('#kitOut', root).innerHTML = order.filter(function (ns) { return by[ns]; }).map(function (ns) {
+      return '<div class="card"><header>' + nsTag(ns) + '<span class="count">' + by[ns].length + ' objects</span></header><div class="chips">' + by[ns].map(function (id) { return chip(id, OBJ[id].req === 'required' ? '' : REQ_TAG[OBJ[id].req]); }).join('') + '</div></div>';
+    }).join('');
+  }
+  $('#kitOpts', root).addEventListener('change', upd);
+  upd();
+}
+
+/* ------------------------------------------------------------ lockdown */
+function renderLockdown() {
+  var L = [
+    ['Unknown hosts are unreachable', 'outboundTrafficPolicy REGISTRY_ONLY, mesh-wide in meshConfig and pinned per namespace by the Sidecar resource. A sidecar sends traffic for any host that is not a Service or ServiceEntry to the BlackHoleCluster.', ['helm-istiod', 'sc-shop', 'sc-billing'], 'Without it: ALLOW_ANY lets apps call any external host directly from their sidecar, never touching the egress gateway.'],
+    ['Only declared hosts exist, only where exported', 'ServiceEntries are the allowlist. exportTo limits which namespaces can see each one, so billing cannot use shop\'s payments API.', ['se-payments', 'se-bank', 'se-files', 'se-backup'], 'Without it: one ServiceEntry with exportTo "*" opens a host to every namespace in the mesh.'],
+    ['Declared hosts go through the egress gateway', 'The VirtualService mesh rule sends traffic to the egress gateway instead of straight out. The DestinationRule subset carries the caller\'s identity there in Istio mTLS.', ['vs-payments', 'vs-files', 'dr-shop-egw', 'dr-billing-egw'], 'Without it: a ServiceEntry alone lets the sidecar connect directly to the external host.'],
+    ['The egress gateway decides who may leave', 'An ALLOW AuthorizationPolicy on the egress gateway pairs principals with destinations. This is the one place where outbound policy is enforced centrally.', ['az-egress'], 'Without it: any workload that can reach the egress gateway can use every route configured on it.'],
+    ['Nobody can go around the sidecar', 'A NetworkPolicy in each tenant namespace allows connections only to pods. The CNI enforces it on the node, outside the pod, so a process that bypasses Envoy still cannot reach the internet. The egress gateway namespace has no such policy, so it remains the only exit.', ['np-shop', 'np-billing'], 'Without it: a container running as UID 1337 or with NET_ADMIN, or a pod without a sidecar, connects to the internet directly.']
+  ];
+  return headHTML(COPY.lockdown) +
+    '<section><h2>Five layers, in packet order</h2><div class="layers">' + L.map(function (l, i) {
+      return '<div class="layer"><span class="num">' + (i + 1) + '</span><div><h3>' + esc(l[0]) + '</h3><p>' + esc(l[1]) + '</p><div class="chips">' + l[2].map(function (id) { return chip(id); }).join('') + '</div><p class="miss">' + esc(l[3]) + '</p></div></div>';
+    }).join('') + '</div></section>' +
+    '<section><h2>Ingress side hardening</h2><div class="grid c3">' +
+    '<div class="card"><h3>Default deny in tenants</h3><p>An empty AuthorizationPolicy per namespace, then explicit allows for the ingress gateway principal.</p><div class="chips">' + chip('az-shop-deny') + chip('az-storefront') + '</div></div>' +
+    '<div class="card"><h3>STRICT mTLS</h3><p>Mesh-wide and per namespace, so only mesh identities reach workloads.</p><div class="chips">' + chip('pa-mesh') + chip('pa-shop') + '</div></div>' +
+    '<div class="card"><h3>Namespace-scoped hosts</h3><p>Gateway hosts as shop/shop.example.com stop other namespaces from hijacking a hostname.</p><div class="chips">' + chip('gw-shop') + chip('az-ledger-ip') + '</div></div>' +
+    '</div></section>' + objectsSection('lockdown', 'Lockdown objects');
+}
+
+/* ------------------------------------------------------------ troubleshoot */
+function renderTroubleshoot() {
+  var T = [
+    ['404 from the ingress gateway, access log flag NR', 'No route bound: gateways: missing the istio-ingress/ prefix, VirtualService host not in the Gateway hosts, wrong namespace in shop/host, or VirtualService exportTo hiding it.', 'istioctl proxy-config routes deploy/istio-ingressgateway -n istio-ingress\nistioctl analyze -A'],
+    ['TLS handshake fails on 443 (curl: SSL_ERROR_SYSCALL or unexpected EOF)', 'No certificate for that SNI: Secret missing, in the wrong namespace, wrong key names, gateway Role missing, or SNI matches no Gateway server.', 'istioctl proxy-config secret deploy/istio-ingressgateway -n istio-ingress\nkubectl -n istio-system logs deploy/istiod | grep -i credential'],
+    ['Client gets a TLS alert "certificate required" or "unknown ca"', 'MUTUAL server: client sent no certificate, it does not chain to ca.crt, or its SAN is not in subjectAltNames.', 'openssl s_client -connect $INGRESS_IP:443 -servername partners.shop.example.com -cert client.crt -key client.key'],
+    ['503 UC / "upstream connect error or disconnect/reset before headers"', 'mTLS mismatch between sender and receiver (DestinationRule DISABLE vs STRICT), backend pod has no sidecar under STRICT, or Service port protocol is wrong.', 'istioctl x describe pod <pod> -n shop\nkubectl -n shop get pod <pod> -o jsonpath=\'{.spec.containers[*].name}\''],
+    ['403 "RBAC: access denied"', 'AuthorizationPolicy: default deny with no matching allow, principal typo (namespace or ServiceAccount), or L7 fields (paths, hosts) on TCP or passthrough traffic.', 'istioctl proxy-config log deploy/storefront -n shop --level rbac:debug\nkubectl -n shop logs deploy/storefront -c istio-proxy | grep rbac'],
+    ['Egress call returns 502 and the sidecar log says BlackHoleCluster', 'REGISTRY_ONLY and the host is not visible: no ServiceEntry, its exportTo excludes the namespace, or the Sidecar egress.hosts excludes it.', 'istioctl proxy-config clusters deploy/storefront -n shop | grep payments'],
+    ['Egress works but nothing appears in the egress gateway log', 'Traffic is leaving directly: VirtualService missing the mesh gateway, not exported to the client namespace, or ALLOW_ANY still on.', 'istioctl proxy-config routes deploy/storefront -n shop --name 80 -o json'],
+    ['Egress gateway returns 404 NR', 'The gateway-side rule is missing, the VirtualService is not exported to istio-egress, or the gateway name in match.gateways differs from gateways:.', 'istioctl proxy-config routes deploy/istio-egressgateway -n istio-egress'],
+    ['Egress gateway resets the connection immediately', 'The sni in the DestinationRule subset matches no egress Gateway host, the port differs between subset and Gateway, or the egress Service lacks the port.', 'istioctl proxy-config listeners deploy/istio-egressgateway -n istio-egress'],
+    ['503 with CERTIFICATE_VERIFY_FAILED at origination', 'External certificate not trusted by the system bundle or ca.crt, or the sni / subjectAltNames do not match the server certificate.', 'istioctl proxy-config clusters deploy/istio-egressgateway -n istio-egress --fqdn api.payments.example.com -o yaml\nopenssl s_client -connect api.payments.example.com:443 -servername api.payments.example.com'],
+    ['TCP egress reaches the wrong external host', 'Two TCP ServiceEntries on the same port without addresses or DNS auto-allocation share one listener.', 'kubectl -n billing exec deploy/reporter -c reporter -- getent hosts backup-db.example.org\nistioctl proxy-config listeners deploy/reporter -n billing --port 5432'],
+    ['TCP ingress times out', 'Port not on the gateway Service, blocked by the cloud firewall, or a DENY policy matching the client IP.', 'kubectl -n istio-ingress get svc istio-ingressgateway\nnc -vz $INGRESS_IP 5432']
+  ];
+  return headHTML({ kicker: 'Operate · module 16', title: 'Verify and troubleshoot', lede: 'Most failures show up as one of a dozen symptoms. Find the symptom, check the likely causes in order, and run the command next to it. Envoy access logs (meshConfig.accessLogFile) are the fastest first look: the response flags NR, UF, UH and URX narrow it down immediately.', key: 'Run istioctl analyze -A after every change. It catches most reference mistakes (missing gateways, unknown hosts, conflicting servers) before traffic does.' }) +
+    '<section><h2>Symptom, cause, check</h2><div class="tbl-wrap"><table class="tbl"><thead><tr><th style="width:28%">Symptom</th><th>Likely cause</th><th style="width:34%">Check</th></tr></thead><tbody>' +
+    T.map(function (r) { return '<tr><td><b>' + esc(r[0]) + '</b></td><td>' + esc(r[1]) + '</td><td><code style="white-space:pre-wrap;display:block;font-size:12px">' + esc(r[2]) + '</code></td></tr>'; }).join('') + '</tbody></table></div></section>' +
+    '<section><h2>Command reference</h2><div class="shell-block"><pre>' + esc('# Everything istiod would push to one proxy, by section\nistioctl proxy-config listeners  deploy/istio-ingressgateway -n istio-ingress\nistioctl proxy-config routes     deploy/istio-ingressgateway -n istio-ingress\nistioctl proxy-config clusters   deploy/istio-ingressgateway -n istio-ingress\nistioctl proxy-config endpoints  deploy/istio-ingressgateway -n istio-ingress\nistioctl proxy-config secret     deploy/istio-ingressgateway -n istio-ingress\n\n# Is every proxy in sync with istiod?\nistioctl proxy-status\n\n# Which policies and routes apply to a pod, in plain words\nistioctl x describe pod <pod> -n shop\n\n# Static analysis across all namespaces\nistioctl analyze -A\n\n# Turn up logging on one proxy temporarily\nistioctl proxy-config log deploy/istio-egressgateway -n istio-egress --level connection:debug,rbac:debug') + '</pre></div></section>' +
+    '<section><h2>Response flags worth knowing</h2><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Flag</th><th>Meaning</th><th>Usual cause here</th></tr></thead><tbody>' +
+    [['NR', 'No route configured', 'VirtualService not bound or not visible'], ['UH', 'No healthy upstream', 'Service has no ready endpoints, or Sidecar hides the destination'], ['UF', 'Upstream connection failure', 'mTLS mismatch, wrong port, TLS origination failed'], ['URX', 'Retry or connect limit reached', 'Backend refusing connections'], ['UAEX', 'Rejected by external authorization', 'CUSTOM AuthorizationPolicy'], ['-', 'No flag; check the status code', '403 from RBAC shows as status 403 with no flag']].map(function (r) { return '<tr><td class="mono"><code>' + r[0] + '</code></td><td>' + r[1] + '</td><td>' + r[2] + '</td></tr>'; }).join('') +
+    '</tbody></table></div></section>';
+}
+
+/* ------------------------------------------------------------ gateway api */
+function renderGatewayAPI() {
+  var M = [
+    ['Gateway + istio/gateway Helm release', 'Gateway with gatewayClassName: istio', 'Istio creates the Deployment and Service for you'],
+    ['servers[].port and protocol', 'listeners[].port and protocol', ''],
+    ['hosts: shop/shop.example.com', 'listener hostname + allowedRoutes.namespaces', 'Namespace restriction moves to the listener'],
+    ['tls.mode SIMPLE + credentialName', 'tls.mode Terminate + certificateRefs', 'ReferenceGrant if the Secret is in another namespace'],
+    ['tls.mode PASSTHROUGH + VirtualService tls', 'protocol TLS, mode Passthrough + TLSRoute', 'TLSRoute is in the experimental channel in many versions'],
+    ['protocol TCP + VirtualService tcp', 'protocol TCP + TCPRoute', 'Experimental channel'],
+    ['tls.mode MUTUAL', 'Frontend client certificate validation', 'Support depends on Gateway API and Istio versions; check yours before migrating'],
+    ['VirtualService http, gateways: X', 'HTTPRoute with parentRefs to the Gateway', ''],
+    ['VirtualService, gateways: mesh', 'HTTPRoute with parentRefs to a Service', 'The GAMMA pattern'],
+    ['DestinationRule, ServiceEntry, Sidecar, PeerAuthentication, AuthorizationPolicy', 'Unchanged', 'Still Istio CRDs. AuthorizationPolicy can target a Gateway with targetRefs'],
+    ['Egress gateway pattern', 'Gateway in istio-egress + routes with a ServiceEntry backend', 'Described in the Istio egress gateway docs for Gateway API']
+  ];
+  return headHTML({ kicker: 'Operate · module 17', title: 'Kubernetes Gateway API mapping', lede: 'Istio also implements the Kubernetes Gateway API, which is becoming the default way to configure gateways. The concepts in this course carry over directly; mostly the names change.', key: 'Gateway API replaces Gateway and VirtualService for gateway routing. Everything about mTLS, identity, external hosts and authorization stays in the Istio CRDs you already know.' }) +
+    '<section><h2>Istio API to Gateway API</h2><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Istio API</th><th>Gateway API</th><th>Notes</th></tr></thead><tbody>' + M.map(function (r) { return '<tr><td>' + esc(r[0]) + '</td><td><b>' + esc(r[1]) + '</b></td><td>' + esc(r[2]) + '</td></tr>'; }).join('') + '</tbody></table></div></section>' +
+    '<section><h2>HTTPS ingress, Gateway API style</h2><p class="prose">The equivalent of shop-gateway and the storefront VirtualService. The Secret and the tenant objects from the HTTPS scenario stay exactly the same.</p><div class="grid c2">' + objDetailMini('gapi-gw') + objDetailMini('gapi-route') + '</div></section>';
+  function objDetailMini(id) { return '<div style="display:flex;flex-direction:column;gap:8px;min-width:0"><p class="prose" style="font-size:14px">' + esc(OBJ[id].why) + '</p>' + yamlView(OBJ[id]) + '</div>'; }
+}
+
+/* ------------------------------------------------------------ quiz */
+var QUIZ = [
+  ['A Gateway in istio-ingress uses credentialName: shop-example-com-tls. Where must that Secret be?', ['In shop, next to the VirtualService', 'In istio-ingress, the gateway pods\' namespace', 'In istio-system, next to istiod', 'Anywhere; istiod searches all namespaces'], 1, 'credentialName has no namespace field. It always resolves in the namespace of the gateway pods, and istiod checks that their ServiceAccount may read Secrets there.'],
+  ['A VirtualService in shop lists gateways: [shop-gateway]. The Gateway is istio-ingress/shop-gateway. What happens?', ['It works; Gateway names are global', 'The route never binds; clients get 404 (NR)', 'Istio copies the Gateway into shop', 'The API server rejects the VirtualService'], 1, 'A bare name is looked up in the VirtualService\'s own namespace. Use istio-ingress/shop-gateway.'],
+  ['Which Gateway tls.mode lets the backend pod present its own certificate?', ['SIMPLE', 'MUTUAL', 'PASSTHROUGH', 'ISTIO_MUTUAL'], 2, 'PASSTHROUGH forwards the encrypted stream by SNI, so the app terminates TLS with its own key.'],
+  ['For tls.mode MUTUAL, what does the gateway need beyond the server certificate and key?', ['The client\'s private key', 'ca.crt of the CA that signs client certificates', 'A PeerAuthentication in istio-ingress', 'A ServiceEntry for the client'], 1, 'The gateway verifies client certificates against ca.crt, from the main Secret or from <credentialName>-cacert.'],
+  ['You added a TCP server on 5432 to a Gateway, and a VirtualService tcp route. External connections time out. What is most likely missing?', ['Port 5432 on the gateway Service', 'A DestinationRule for the database', 'A Certificate for the database', 'A Sidecar resource'], 0, 'A Gateway configures Envoy listeners, but the load balancer only forwards ports the Service exposes.'],
+  ['In egress TLS origination, which object makes the egress gateway open TLS to api.payments.example.com?', ['The egress Gateway server', 'The DestinationRule in istio-egress with tls.mode SIMPLE', 'The ServiceEntry port with protocol HTTPS', 'PeerAuthentication STRICT'], 1, 'DestinationRules configure the sending side. Applied at the egress gateway, mode SIMPLE originates TLS on port 443.'],
+  ['Why does the payments ServiceEntry list istio-egress in exportTo?', ['So the egress gateway can see and route to the host', 'So pods in istio-egress can call it directly', 'DNS resolution requires it', 'It is not needed'], 0, 'The egress gateway is a proxy in istio-egress. It only knows hosts exported to its namespace.'],
+  ['Which object sets ISTIO_MUTUAL and the SNI on the sidecar to egress gateway hop?', ['The egress Gateway', 'A DestinationRule for the egress gateway Service, per subset', 'The ServiceEntry', 'The Sidecar resource'], 1, 'The sending sidecar applies the DestinationRule for istio-egressgateway.istio-egress.svc.cluster.local. Its subset adds Istio mTLS and an SNI naming the final destination.'],
+  ['With TLS passthrough egress, what can the egress gateway AuthorizationPolicy check?', ['Caller principal and HTTP path', 'Only SNI and port', 'The HTTP Host header', 'Nothing at all'], 1, 'The hop carries the app\'s own TLS, not Istio mTLS, so there is no principal and no HTTP. connection.sni and ports remain.'],
+  ['Which control stops a pod that bypasses its sidecar from reaching the internet?', ['outboundTrafficPolicy REGISTRY_ONLY', 'AuthorizationPolicy on the egress gateway', 'A NetworkPolicy enforced by the CNI', 'The Sidecar resource'], 2, 'Everything Istio enforces runs in Envoy. A NetworkPolicy is enforced on the node, outside the pod.'],
+  ['Which principal should a tenant AuthorizationPolicy allow for traffic from the ingress gateway?', ['istio=ingressgateway', 'cluster.local/ns/istio-ingress/sa/istio-ingressgateway', 'shop.example.com', 'istio-ingressgateway.istio-ingress.svc.cluster.local'], 1, 'Principals are trust domain / namespace / ServiceAccount of the caller\'s Istio certificate.'],
+  ['Why does a gateway\'s ServiceAccount need a Role that can read Secrets?', ['Envoy mounts Secrets as volumes', 'istiod checks that permission before serving credentialName Secrets over SDS', 'cert-manager requires it', 'For leader election'], 1, 'istiod reads the Secret, but serves it only to proxies whose ServiceAccount is authorized to read Secrets in that namespace.'],
+  ['Two external TCP databases share port 5432. Their ServiceEntries have no addresses and DNS auto-allocation is off. What happens?', ['Each is routed by hostname', 'They collide on one 0.0.0.0:5432 listener', 'Istio rejects the second ServiceEntry', 'Traffic is load-balanced between them by design'], 1, 'TCP has no hostname, so without distinct IPs the sidecar cannot tell them apart.'],
+  ['What should the Service port for the passthrough backend be named?', ['http-docs', 'tls-docs', 'grpc-docs', 'Anything; names are cosmetic'], 1, 'The tls- prefix (or appProtocol: tls) tells Istio the stream is TLS. An http- name makes it parse encrypted bytes.']
+];
+function renderQuiz() {
+  return headHTML({ kicker: 'Operate · module 18', title: 'Knowledge check', lede: QUIZ.length + ' questions across every module. Each answer explains itself, right or wrong.' }) +
+    '<section><p class="score" id="quizScore">0 of ' + QUIZ.length + ' answered</p><div class="quiz">' + QUIZ.map(function (q, i) {
+      return '<div class="q" data-q="' + i + '"><span class="n">Question ' + (i + 1) + '</span><h3>' + esc(q[0]) + '</h3><div class="ans">' + q[1].map(function (a, j) { return '<button class="a" data-a="' + j + '">' + esc(a) + '</button>'; }).join('') + '</div><p class="why" hidden></p></div>';
+    }).join('') + '</div><div><button class="btn" id="quizReset">Reset answers</button></div></section>';
+}
+function initQuiz(root) {
+  var answered = 0, right = 0;
+  function score() { $('#quizScore', root).textContent = answered + ' of ' + QUIZ.length + ' answered · ' + right + ' correct'; }
+  root.addEventListener('click', function (e) {
+    var a = e.target.closest('.a');
+    if (a && !a.disabled) {
+      var qe = a.closest('.q'), qi = +qe.getAttribute('data-q'), q = QUIZ[qi], pick = +a.getAttribute('data-a');
+      $$('.a', qe).forEach(function (b, j) { b.disabled = true; if (j === q[2]) b.classList.add('right'); else if (j === pick) b.classList.add('wrong'); });
+      var w = $('.why', qe); w.hidden = false; w.textContent = (pick === q[2] ? 'Correct. ' : 'Not quite. ') + q[3];
+      answered++; if (pick === q[2]) right++; score();
+      if (answered === QUIZ.length) markDone('quiz');
+    }
+    if (e.target.id === 'quizReset') {
+      answered = 0; right = 0;
+      $$('.q', root).forEach(function (qe) { $$('.a', qe).forEach(function (b) { b.disabled = false; b.classList.remove('right', 'wrong'); }); $('.why', qe).hidden = true; });
+      score();
+    }
+  });
+}
+
+/* ------------------------------------------------------------ shell */
+var RENDER = {
+  overview: renderOverview, traffic: renderTraffic, catalog: renderCatalog, foundation: renderFoundation, certs: renderCerts,
+  tenant: renderTenant, lockdown: renderLockdown, troubleshoot: renderTroubleshoot, gatewayapi: renderGatewayAPI, quiz: renderQuiz
+};
+var INIT = {
+  catalog: initCatalog, tenant: initTenant, quiz: initQuiz,
+  foundation: function (r) { initObjects(r, 'foundation'); },
+  certs: function (r) { initObjects(r, 'certs'); },
+  lockdown: function (r) { initObjects(r, 'lockdown'); }
+};
+['in-https', 'in-mtls', 'in-pass', 'in-tcp', 'eg-orig', 'eg-mtls', 'eg-pass', 'eg-tcp'].forEach(function (id) {
+  RENDER[id] = function () { return renderScenario(id); };
+  INIT[id] = function (r) { initFlow(r, SC[id]); initObjects(r, id); };
+});
+
+var done;
+try { done = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { done = []; }
+function saveDone() { try { localStorage.setItem(KEY, JSON.stringify(done)); } catch (e) { } }
+function markDone(id) { if (done.indexOf(id) < 0) { done.push(id); saveDone(); } updNav(); }
+
+function renderNav() {
+  var groups = [], gmap = {};
+  MODULES.forEach(function (m) { if (!gmap[m.group]) { gmap[m.group] = []; groups.push(m.group); } gmap[m.group].push(m); });
+  $('#navGroups').innerHTML = groups.map(function (g) {
+    return '<div class="nav-group"><h3>' + esc(g) + '</h3>' + gmap[g].map(function (m) { return '<button class="nav-item" data-go="' + m.id + '"><span class="tick" aria-hidden="true"></span><span>' + esc(m.title) + '</span></button>'; }).join('') + '</div>';
+  }).join('');
+}
+function updNav() {
+  $$('.nav-item').forEach(function (b) { var id = b.getAttribute('data-go'); b.classList.toggle('done', done.indexOf(id) >= 0); b.classList.toggle('active', id === cur); });
+  var n = MODULES.filter(function (m) { return done.indexOf(m.id) >= 0; }).length;
+  $('#progressText').textContent = n + ' of ' + MODULES.length + ' modules complete';
+  $('#progressBar').style.width = (n / MODULES.length * 100) + '%';
+  var fb = $('#m-' + cur + ' [data-done]');
+  if (fb) { var d = done.indexOf(cur) >= 0; fb.textContent = d ? 'Completed' : 'Mark module complete'; fb.classList.toggle('primary', !d); }
+}
+function footHTML(id) {
+  var m = MOD[id], nx = MODULES[m.i + 1];
+  return '<footer class="mod-foot"><button class="btn primary" data-done="' + id + '">Mark module complete</button>' +
+    (nx ? '<div class="next"><small>Next · ' + esc(nx.group) + '</small><button class="btn" data-go="' + nx.id + '" data-markgo="' + id + '">' + esc(nx.title) + ' →</button></div>' : '') + '</footer>';
+}
+var cur = null;
+function go(id) {
+  if (!MOD[id]) id = 'overview';
+  cur = id;
+  var main = $('#main'), sec = $('#m-' + id);
+  if (!sec) {
+    sec = document.createElement('article'); sec.className = 'module'; sec.id = 'm-' + id;
+    try { sec.innerHTML = RENDER[id]() + footHTML(id); if (INIT[id]) INIT[id](sec); }
+    catch (err) { console.error(err); sec.innerHTML = '<p>This module failed to load: ' + esc(err.message) + '</p>'; }
+    main.appendChild(sec);
+  }
+  $$('.module', main).forEach(function (s) { s.hidden = s !== sec; });
+  if (location.hash.slice(1) !== id) { try { history.replaceState(null, '', '#' + id); } catch (e) { } }
+  document.title = (id === 'overview' ? '' : MOD[id].title + ' · ') + 'Istio Ingress & Egress';
+  window.scrollTo(0, 0);
+  $('#rail').classList.remove('open'); $('#railToggle').setAttribute('aria-expanded', 'false');
+  updNav();
+}
+
+/* modal */
+function openModal(id) {
+  $('#modalBody').innerHTML = objDetail(id, ALL_EDGES);
+  $('#modal').hidden = false; $('#modalClose').focus();
+}
+function closeModal() { $('#modal').hidden = true; }
+$('#modalClose').addEventListener('click', closeModal);
+$('#modal').addEventListener('click', function (e) { if (e.target.id === 'modal') closeModal(); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#modal').hidden) closeModal(); });
+
+function toast(msg) { var t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(function () { t.remove(); }, 1800); }
+
+/* global delegation */
+document.addEventListener('click', function (e) {
+  var g = e.target.closest('[data-go]');
+  if (g) { if (g.hasAttribute('data-markgo')) markDone(g.getAttribute('data-markgo')); closeModal(); go(g.getAttribute('data-go')); return; }
+  var d = e.target.closest('[data-done]');
+  if (d) { var id = d.getAttribute('data-done'); var i = done.indexOf(id); if (i >= 0) done.splice(i, 1); else done.push(id); saveDone(); updNav(); return; }
+  var c = e.target.closest('[data-copy]');
+  if (c) {
+    var txt = window.__yaml[c.getAttribute('data-copy')];
+    var ok = function () { c.textContent = 'Copied'; setTimeout(function () { c.textContent = 'Copy YAML'; }, 1500); };
+    var fallback = function () { var pre = c.closest('.yaml').querySelector('pre'); var r = document.createRange(); r.selectNodeContents(pre); var s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Selected. Press Ctrl+C or Cmd+C to copy.'); };
+    try { navigator.clipboard.writeText(txt).then(ok, fallback); } catch (er) { fallback(); }
+    return;
+  }
+  var mk = e.target.closest('.mk');
+  if (mk) { var y = mk.closest('.yaml'), li = $('[data-note-li="' + mk.getAttribute('data-note') + '"]', y); if (li) { li.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); li.classList.add('hl'); setTimeout(function () { li.classList.remove('hl'); }, 1600); } return; }
+  var o = e.target.closest('[data-obj]');
+  if (o) {
+    var oid = o.getAttribute('data-obj'), modEl = o.closest('.module'), inModal = o.closest('#modal');
+    var scId = modEl && modEl.id.slice(2);
+    if (!inModal && scId && SC[scId] && SC[scId].objects.indexOf(oid) >= 0 && modEl.__select) { modEl.__select(oid, true); }
+    else openModal(oid);
+  }
+});
+document.addEventListener('mouseover', function (e) {
+  var t = e.target.closest('.mk, .notes li, .ln[data-line]'); if (!t) return;
+  var y = t.closest('.yaml'); var n = t.getAttribute('data-note') || t.getAttribute('data-note-li') || t.getAttribute('data-line');
+  $$('.hl', y).forEach(function (x) { x.classList.remove('hl'); });
+  $$('[data-line="' + n + '"], [data-note-li="' + n + '"]', y).forEach(function (x) { x.classList.add('hl'); });
+});
+document.addEventListener('mouseout', function (e) { var y = e.target.closest && e.target.closest('.yaml'); if (y && !y.contains(e.relatedTarget)) $$('.hl', y).forEach(function (x) { x.classList.remove('hl'); }); });
+document.addEventListener('keydown', function (e) { var r = e.target.closest && e.target.closest('.route[data-go]'); if (r && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); go(r.getAttribute('data-go')); } });
+
+$('#railToggle').addEventListener('click', function () { var r = $('#rail'); var o = r.classList.toggle('open'); this.setAttribute('aria-expanded', o ? 'true' : 'false'); });
+window.addEventListener('hashchange', function () { var h = location.hash.slice(1); if (h && h !== cur) go(h); });
+
+renderNav();
+go(location.hash.slice(1) || 'overview');
+})();
+</script>
+</body>
+</html>
